@@ -1,0 +1,1404 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>INTRUDER — Advanced Security Research Suite</title>
+<link href="https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=Bebas+Neue&family=Rajdhani:wght@300;400;600;700&display=swap" rel="stylesheet">
+<style>
+:root {
+  --r:     #cc0000;
+  --r2:    #ff1a1a;
+  --r3:    rgba(204,0,0,.07);
+  --bg:    #000000;
+  --s1:    #040404;
+  --s2:    #070707;
+  --tx:    #b0b0b0;
+  --txd:   #3a3a3a;
+  --bdr:   rgba(204,0,0,.1);
+  --bdrw:  rgba(255,255,255,.04);
+}
+
+*,*::before,*::after{margin:0;padding:0;box-sizing:border-box;}
+html{scroll-behavior:smooth;}
+*{cursor:none!important;}
+
+body{
+  background:var(--bg);
+  color:var(--tx);
+  font-family:'Rajdhani',sans-serif;
+  font-weight:400;
+  overflow-x:hidden;
+  line-height:1.6;
+}
+
+/* scanlines */
+body::after{
+  content:'';position:fixed;inset:0;
+  background:repeating-linear-gradient(0deg,transparent,transparent 3px,rgba(0,0,0,.055) 3px,rgba(0,0,0,.055) 4px);
+  pointer-events:none;z-index:9990;
+}
+
+/* ── PIXEL CURSOR ── */
+#px{
+  position:fixed;z-index:99999;
+  pointer-events:none;
+  image-rendering:pixelated;
+  width:16px;height:16px;
+  transform:translate(0,0);
+}
+
+/* scroll bar */
+#spb{position:fixed;top:0;left:0;height:1px;background:var(--r);width:0%;z-index:9995;box-shadow:0 0 5px var(--r);}
+
+/* ══════════════════════════════════
+   ── UNIQUE HEADER / NAV ──
+══════════════════════════════════ */
+.site-header{
+  position:fixed;top:0;left:0;right:0;z-index:900;
+  background:rgba(0,0,0,.96);
+  backdrop-filter:blur(16px);
+}
+
+/* top micro-bar */
+.header-topbar{
+  border-bottom:1px solid rgba(204,0,0,.07);
+  padding:5px 52px;
+  display:flex;justify-content:space-between;align-items:center;
+}
+.topbar-left{
+  display:flex;gap:24px;
+  font-family:'Share Tech Mono',monospace;
+  font-size:9px;letter-spacing:.22em;color:var(--txd);
+  text-transform:uppercase;
+}
+.topbar-left .live{color:var(--r2);animation:tbBlink 1.4s step-end infinite;}
+@keyframes tbBlink{50%{opacity:.25}}
+.topbar-right{
+  font-family:'Share Tech Mono',monospace;
+  font-size:9px;letter-spacing:.2em;color:var(--txd);
+}
+#sysTime{color:rgba(204,0,0,.55);}
+
+/* main nav row */
+.header-main{
+  padding:0 52px;
+  display:flex;align-items:stretch;
+  border-bottom:1px solid rgba(204,0,0,.06);
+  min-height:62px;
+}
+
+/* ── LOGO block — the unique header ── */
+.logo-block{
+  display:flex;align-items:center;gap:18px;
+  padding:14px 32px 14px 0;
+  border-right:1px solid rgba(204,0,0,.08);
+  margin-right:36px;
+  position:relative;
+}
+
+/* animated scan line on logo block */
+.logo-block::after{
+  content:'';position:absolute;top:0;left:0;right:0;
+  height:1px;background:linear-gradient(90deg,transparent,var(--r),transparent);
+  animation:logoscan 3s ease-in-out infinite;
+  opacity:.5;
+}
+@keyframes logoscan{0%,100%{transform:translateX(-100%)}50%{transform:translateX(100%)}}
+
+/* hexagon mark */
+.logo-mark{
+  position:relative;width:38px;height:44px;flex-shrink:0;
+}
+.logo-mark svg{width:100%;height:100%;}
+.logo-mark .hex-fill{fill:none;stroke:rgba(204,0,0,.5);stroke-width:1;
+  animation:hexPulse 3s ease-in-out infinite;}
+.logo-mark .hex-inner{fill:var(--r);opacity:.12;animation:hexPulse 3s ease-in-out infinite .5s;}
+.logo-mark .hex-dot{fill:var(--r2);}
+@keyframes hexPulse{0%,100%{opacity:.5}50%{opacity:1}}
+
+/* glitch wordmark */
+.logo-word{
+  display:flex;flex-direction:column;gap:1px;
+}
+.logo-name{
+  font-family:'Bebas Neue',monospace;
+  font-size:26px;letter-spacing:.2em;
+  color:#fff;position:relative;
+  display:inline-block;line-height:1;
+}
+.logo-name::before,.logo-name::after{
+  content:attr(data-t);
+  position:absolute;top:0;left:0;
+  font-family:'Bebas Neue',monospace;font-size:26px;letter-spacing:.2em;line-height:1;
+}
+.logo-name::before{color:var(--r2);animation:gn1 7s steps(1) infinite;}
+.logo-name::after {color:#002200;  animation:gn2 7s steps(1) infinite;}
+@keyframes gn1{0%,91%,100%{opacity:0;transform:none}92%{opacity:1;transform:translate(-2px,0);clip-path:polygon(0 15%,100% 15%,100% 40%,0 40%)}93%{opacity:1;transform:translate(2px,0);clip-path:polygon(0 60%,100% 60%,100% 85%,0 85%)}94%{opacity:0}}
+@keyframes gn2{0%,91%,100%{opacity:0;transform:none}92%{opacity:1;transform:translate(2px,0);clip-path:polygon(0 60%,100% 60%,100% 85%,0 85%)}93%{opacity:1;transform:translate(-2px,0);clip-path:polygon(0 15%,100% 15%,100% 40%,0 40%)}94%{opacity:0}}
+
+.logo-tag{
+  font-family:'Share Tech Mono',monospace;
+  font-size:8px;letter-spacing:.35em;
+  color:rgba(204,0,0,.4);text-transform:uppercase;
+}
+
+/* nav items */
+.nav-items{
+  display:flex;align-items:center;gap:0;flex:1;
+}
+.nav-item{
+  font-family:'Share Tech Mono',monospace;
+  font-size:10px;letter-spacing:.2em;text-transform:uppercase;
+  color:var(--txd);text-decoration:none;
+  padding:0 22px;height:100%;
+  display:flex;align-items:center;
+  border-right:1px solid rgba(255,255,255,.03);
+  transition:color .2s,background .2s;
+  position:relative;
+}
+.nav-item::after{
+  content:'';position:absolute;bottom:0;left:0;right:0;
+  height:2px;background:var(--r);
+  transform:scaleX(0);transition:transform .25s ease;
+}
+.nav-item:hover{color:var(--tx);background:rgba(204,0,0,.03);}
+.nav-item:hover::after{transform:scaleX(1);}
+
+.nav-right{
+  display:flex;align-items:center;gap:12px;
+  margin-left:auto;padding-left:24px;
+}
+.nav-badge{
+  font-family:'Share Tech Mono',monospace;font-size:9px;
+  letter-spacing:.15em;text-transform:uppercase;
+  padding:4px 10px;border:1px solid rgba(0,180,60,.2);
+  color:rgba(0,180,60,.6);
+}
+.nav-cta{
+  font-family:'Share Tech Mono',monospace;font-size:10px;
+  letter-spacing:.2em;text-transform:uppercase;
+  padding:10px 22px;background:var(--r);color:#fff;
+  text-decoration:none;border:none;
+  transition:background .2s;
+  white-space:nowrap;
+}
+.nav-cta:hover{background:var(--r2);}
+
+/* ══════════════════════════════════
+   HERO
+══════════════════════════════════ */
+.hero{
+  min-height:100vh;
+  display:grid;grid-template-columns:1fr 340px;gap:0;
+  padding:0;
+  position:relative;overflow:hidden;
+}
+
+.hero-left{
+  display:flex;flex-direction:column;justify-content:center;
+  padding:130px 52px 80px;
+  position:relative;
+}
+
+/* grid bg */
+.hero-left::before{
+  content:'';position:absolute;inset:0;
+  background-image:
+    linear-gradient(rgba(204,0,0,.028) 1px,transparent 1px),
+    linear-gradient(90deg,rgba(204,0,0,.028) 1px,transparent 1px);
+  background-size:48px 48px;
+  pointer-events:none;
+}
+
+.hero-eyebrow{
+  font-family:'Share Tech Mono',monospace;
+  font-size:10px;letter-spacing:.4em;text-transform:uppercase;
+  color:var(--r);margin-bottom:24px;
+  display:flex;align-items:center;gap:10px;
+  opacity:0;animation:fu .5s ease .5s both;
+}
+.eyebrow-line{width:32px;height:1px;background:var(--r);opacity:.5;}
+
+.hero-title{
+  font-family:'Bebas Neue',monospace;
+  font-size:clamp(64px,10vw,124px);
+  letter-spacing:.02em;line-height:.88;
+  color:#fff;margin-bottom:4px;
+  opacity:0;animation:fu .7s cubic-bezier(.16,1,.3,1) .6s both;
+}
+.hero-title .red{color:var(--r2);}
+.hero-title .ghost{color:#141414;}
+
+.hero-version{
+  font-family:'Bebas Neue',monospace;
+  font-size:clamp(28px,4vw,52px);
+  letter-spacing:.08em;color:#161616;
+  margin-bottom:32px;
+  opacity:0;animation:fu .5s ease .7s both;
+}
+
+.hero-desc{
+  font-size:15px;font-weight:300;color:var(--txd);
+  max-width:500px;line-height:1.85;margin-bottom:40px;
+  opacity:0;animation:fu .5s ease .8s both;
+}
+
+.hero-ctas{
+  display:flex;gap:12px;flex-wrap:wrap;
+  opacity:0;animation:fu .5s ease .95s both;
+}
+
+.btn-p{
+  font-family:'Share Tech Mono',monospace;font-size:11px;
+  letter-spacing:.2em;text-transform:uppercase;
+  background:var(--r);color:#fff;border:none;
+  padding:13px 30px;text-decoration:none;
+  transition:all .2s;display:inline-block;
+}
+.btn-p:hover{background:var(--r2);box-shadow:0 0 24px rgba(204,0,0,.3);}
+
+.btn-g{
+  font-family:'Share Tech Mono',monospace;font-size:11px;
+  letter-spacing:.2em;text-transform:uppercase;
+  background:transparent;color:var(--txd);
+  border:1px solid rgba(255,255,255,.07);
+  padding:13px 30px;text-decoration:none;
+  transition:all .2s;display:inline-block;
+}
+.btn-g:hover{border-color:rgba(255,255,255,.18);color:var(--tx);}
+
+/* hero right panel */
+.hero-right{
+  border-left:1px solid var(--bdrw);
+  display:flex;flex-direction:column;
+  padding:130px 0 0;
+  opacity:0;animation:fr .6s ease 1s both;
+}
+@keyframes fr{from{opacity:0;transform:translateX(16px)}to{opacity:1;transform:none}}
+
+.panel-title{
+  font-family:'Share Tech Mono',monospace;font-size:9px;
+  letter-spacing:.3em;text-transform:uppercase;
+  color:rgba(204,0,0,.35);padding:0 24px 12px;
+  border-bottom:1px solid var(--bdrw);
+  display:flex;align-items:center;gap:8px;
+}
+.ldot{width:5px;height:5px;border-radius:50%;background:var(--r2);animation:ldp 1.5s ease-in-out infinite;}
+@keyframes ldp{50%{opacity:.15;box-shadow:none}0%,100%{box-shadow:0 0 4px var(--r2)}}
+
+/* activity feed */
+.act-feed{flex:1;overflow:hidden;padding:0;}
+.act-entry{
+  display:flex;flex-direction:column;gap:2px;
+  padding:10px 24px;
+  border-bottom:1px solid rgba(255,255,255,.025);
+  animation:actIn .2s ease forwards;opacity:0;
+}
+@keyframes actIn{to{opacity:1}}
+.ae-top{display:flex;gap:10px;align-items:center;}
+.ae-time{font-family:'Share Tech Mono',monospace;font-size:9px;color:rgba(255,255,255,.14);}
+.ae-type{font-size:8px;letter-spacing:.15em;font-family:'Share Tech Mono',monospace;
+  padding:2px 6px;text-transform:uppercase;}
+.ae-type.crit{background:rgba(204,0,0,.12);color:rgba(204,0,0,.7);}
+.ae-type.warn{background:rgba(255,176,0,.08);color:rgba(255,176,0,.6);}
+.ae-type.info{background:rgba(0,150,255,.06);color:rgba(0,150,255,.5);}
+.ae-type.ok  {background:rgba(0,180,60,.06); color:rgba(0,180,60,.5);}
+.ae-msg{font-family:'Share Tech Mono',monospace;font-size:10px;color:rgba(255,255,255,.3);padding-left:0;}
+
+/* mini network graph */
+.net-graph-wrap{
+  height:120px;border-top:1px solid var(--bdrw);flex-shrink:0;
+  display:flex;flex-direction:column;
+}
+.net-graph-label{
+  font-family:'Share Tech Mono',monospace;font-size:9px;letter-spacing:.25em;
+  color:var(--txd);padding:8px 24px;text-transform:uppercase;
+  border-bottom:1px solid var(--bdrw);
+}
+#netGraph{width:100%;flex:1;}
+
+/* ══════════════════════════════════
+   STATS
+══════════════════════════════════ */
+.stats-sec{background:var(--s1);border-top:1px solid var(--bdrw);}
+.stats-inner{
+  display:grid;grid-template-columns:repeat(5,1fr);
+  border-left:1px solid var(--bdrw);
+}
+.sc{
+  padding:36px 28px;
+  border-right:1px solid var(--bdrw);
+  border-bottom:1px solid var(--bdrw);
+  position:relative;overflow:hidden;
+  transition:background .3s;
+}
+.sc:hover{background:#080808;}
+.sc::before{
+  content:'';position:absolute;top:0;left:0;
+  width:2px;height:0;background:var(--r);
+  transition:height .6s ease;
+}
+.sc.vis::before{height:100%;}
+.sc-num{
+  font-family:'Bebas Neue',monospace;
+  font-size:clamp(32px,4vw,52px);line-height:1;
+  color:#fff;margin-bottom:4px;
+}
+.sc-num .u{font-size:.5em;color:var(--r2);margin-left:1px;}
+.sc-lbl{
+  font-family:'Share Tech Mono',monospace;font-size:9px;
+  letter-spacing:.25em;text-transform:uppercase;color:var(--txd);
+  margin-bottom:14px;
+}
+.sc-bar{height:1px;background:rgba(255,255,255,.04);margin-bottom:10px;}
+.sc-bar-fill{height:1px;background:var(--r);width:0%;transition:width 1.4s cubic-bezier(.16,1,.3,1);}
+.sc.vis .sc-bar-fill{width:var(--p);}
+.sc-sub{font-size:11px;color:rgba(255,255,255,.15);font-family:'Share Tech Mono',monospace;}
+
+/* ══════════════════════════════════
+   SECTION STRUCTURE
+══════════════════════════════════ */
+.sec{padding:80px 52px;border-top:1px solid var(--bdrw);}
+.sec-ey{font-family:'Share Tech Mono',monospace;font-size:9px;letter-spacing:.4em;text-transform:uppercase;color:rgba(204,0,0,.35);margin-bottom:8px;}
+.sec-hd{font-family:'Bebas Neue',monospace;font-size:clamp(28px,4vw,48px);letter-spacing:.04em;color:#fff;margin-bottom:36px;}
+
+.sr{opacity:0;transform:translateY(20px);transition:opacity .6s ease,transform .6s cubic-bezier(.16,1,.3,1);}
+.sr.vis{opacity:1;transform:none;}
+.sr-l{opacity:0;transform:translateX(-24px);transition:opacity .6s ease,transform .6s cubic-bezier(.16,1,.3,1);}
+.sr-l.vis{opacity:1;transform:none;}
+.sr-r{opacity:0;transform:translateX(24px);transition:opacity .6s ease,transform .6s cubic-bezier(.16,1,.3,1);}
+.sr-r.vis{opacity:1;transform:none;}
+
+@keyframes fu{from{opacity:0;transform:translateY(14px)}to{opacity:1;transform:none}}
+
+/* ══════════════════════════════════
+   TOOLS SECTION
+══════════════════════════════════ */
+.tools-grid{
+  display:grid;grid-template-columns:1fr 1fr;gap:1px;
+  background:var(--bdrw);border:1px solid var(--bdrw);
+}
+.tp{
+  background:var(--s2);padding:28px;
+  transition:background .25s;
+}
+.tp:hover{background:var(--s1);}
+.tp-hdr{
+  display:flex;align-items:center;justify-content:space-between;
+  margin-bottom:20px;padding-bottom:14px;
+  border-bottom:1px solid rgba(255,255,255,.04);
+}
+.tp-name{
+  font-family:'Share Tech Mono',monospace;font-size:10px;
+  letter-spacing:.22em;text-transform:uppercase;color:rgba(255,255,255,.4);
+}
+.tp-stat{
+  font-family:'Share Tech Mono',monospace;font-size:8px;
+  letter-spacing:.15em;text-transform:uppercase;padding:3px 9px;
+}
+.tp-stat.rdy{color:rgba(0,180,60,.6);border:1px solid rgba(0,180,60,.18);}
+.tp-stat.lv {color:var(--r2);border:1px solid rgba(204,0,0,.25);animation:lvBlink 1s step-end infinite;}
+@keyframes lvBlink{50%{opacity:.3}}
+
+/* inputs */
+.fi{
+  font-family:'Share Tech Mono',monospace;font-size:12px;
+  background:rgba(255,255,255,.02);border:1px solid rgba(255,255,255,.05);
+  color:#fff;padding:9px 13px;width:100%;outline:none;
+  transition:border-color .2s;margin-bottom:8px;
+}
+.fi:focus{border-color:rgba(204,0,0,.3);}
+.fi::placeholder{color:var(--txd);}
+
+.frow{display:flex;gap:8px;margin-bottom:8px;}
+.frow .fi{margin-bottom:0;}
+
+/* buttons */
+.tb{
+  font-family:'Share Tech Mono',monospace;font-size:10px;
+  letter-spacing:.18em;text-transform:uppercase;
+  background:var(--r);color:#fff;border:none;
+  padding:10px 18px;width:100%;margin-top:4px;
+  transition:background .2s;
+}
+.tb:hover{background:var(--r2);}
+.tb.sec{background:transparent;color:rgba(255,255,255,.25);border:1px solid rgba(255,255,255,.06);}
+.tb.sec:hover{border-color:rgba(255,255,255,.12);color:rgba(255,255,255,.5);}
+.tb.sm{width:auto;padding:9px 16px;margin-top:0;}
+
+/* output areas */
+.tout{
+  font-family:'Share Tech Mono',monospace;font-size:10px;
+  color:rgba(255,255,255,.28);line-height:2;
+  max-height:130px;overflow-y:auto;margin-top:12px;
+  scrollbar-width:thin;scrollbar-color:rgba(204,0,0,.2) transparent;
+}
+.t-open{color:rgba(0,200,80,.65);}
+.t-warn{color:rgba(255,176,0,.6);}
+.t-crit{color:rgba(204,0,0,.75);}
+.t-dim {color:rgba(255,255,255,.15);}
+
+/* algo pills */
+.algo-row{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:12px;}
+.ap{
+  font-family:'Share Tech Mono',monospace;font-size:8px;letter-spacing:.15em;
+  text-transform:uppercase;background:transparent;
+  border:1px solid rgba(255,255,255,.07);color:rgba(255,255,255,.28);
+  padding:4px 12px;transition:all .2s;
+}
+.ap.on{border-color:rgba(204,0,0,.4);color:var(--r2);}
+.ap:hover{border-color:rgba(255,255,255,.14);color:rgba(255,255,255,.55);}
+
+.hout{
+  font-family:'Share Tech Mono',monospace;font-size:10px;color:rgba(204,0,0,.65);
+  word-break:break-all;line-height:1.8;padding:10px 13px;margin-top:10px;
+  background:rgba(204,0,0,.03);border:1px solid rgba(204,0,0,.07);
+  min-height:40px;display:none;
+}
+.hout.on{display:block;}
+
+/* packet stream */
+.pkt-wrap{max-height:160px;overflow-y:auto;scrollbar-width:thin;scrollbar-color:rgba(204,0,0,.15) transparent;}
+.pr{
+  display:grid;grid-template-columns:56px 44px 1fr auto;
+  gap:8px;padding:4px 0;
+  border-bottom:1px solid rgba(255,255,255,.025);
+  font-family:'Share Tech Mono',monospace;font-size:9px;
+  color:rgba(255,255,255,.2);animation:pi .12s ease both;
+}
+@keyframes pi{from{opacity:0}to{opacity:1}}
+.prtcp{color:rgba(0,180,80,.5);}
+.prudp{color:rgba(255,176,0,.45);}
+.prhttp{color:rgba(0,130,255,.45);}
+.prsus{color:rgba(204,0,0,.7);}
+.pflag{font-size:8px;padding:1px 5px;border:1px solid rgba(204,0,0,.3);color:rgba(204,0,0,.65);}
+
+/* intel fields */
+.ifields{display:none;grid-template-columns:1fr 1fr;gap:6px;margin-top:12px;}
+.ifields.on{display:grid;}
+.ifield{padding:8px 11px;background:rgba(255,255,255,.02);border:1px solid rgba(255,255,255,.035);}
+.ik{font-size:8px;letter-spacing:.2em;color:var(--txd);margin-bottom:2px;text-transform:uppercase;font-family:'Share Tech Mono',monospace;}
+.iv{font-size:11px;color:rgba(255,255,255,.55);font-family:'Share Tech Mono',monospace;}
+.iv.ld{color:rgba(255,255,255,.18);animation:ldBl .7s step-end infinite;}
+@keyframes ldBl{50%{opacity:.25}}
+
+/* password meter */
+.pmeter{height:3px;background:rgba(255,255,255,.05);margin-top:10px;border-radius:0;}
+.pmfill{height:3px;width:0%;transition:width .4s ease,background .4s ease;border-radius:0;}
+.pscore{
+  font-family:'Share Tech Mono',monospace;font-size:10px;
+  color:var(--txd);margin-top:8px;letter-spacing:.1em;
+}
+
+/* encoder tabs */
+.etabs{display:flex;gap:0;margin-bottom:12px;border-bottom:1px solid var(--bdrw);}
+.etab{
+  font-family:'Share Tech Mono',monospace;font-size:9px;letter-spacing:.18em;text-transform:uppercase;
+  padding:7px 16px;color:var(--txd);background:transparent;border:none;
+  border-bottom:2px solid transparent;margin-bottom:-1px;transition:all .2s;
+}
+.etab.on{color:var(--r2);border-bottom-color:var(--r);}
+.etab:hover{color:var(--tx);}
+
+/* ping result */
+.ping-result{font-family:'Share Tech Mono',monospace;font-size:10px;color:rgba(255,255,255,.25);line-height:2;margin-top:10px;min-height:40px;}
+.pg-ok{color:rgba(0,200,80,.65);}
+.pg-slow{color:rgba(255,176,0,.65);}
+.pg-fail{color:rgba(204,0,0,.65);}
+
+/* ── WHOIS TOOL ── */
+.whois-out{
+  font-family:'Share Tech Mono',monospace;font-size:10px;
+  color:rgba(255,255,255,.25);line-height:2;margin-top:10px;
+  max-height:130px;overflow-y:auto;display:none;
+}
+.whois-out.on{display:block;}
+.wok{color:rgba(0,200,80,.6);}
+.winfo{color:rgba(0,150,255,.5);}
+
+/* ══════════════════════════════════
+   TERMINAL
+══════════════════════════════════ */
+.terminal-wrap{
+  border:1px solid rgba(204,0,0,.1);
+  background:#000;
+  margin-top:0;
+}
+.term-bar{
+  background:rgba(255,255,255,.02);
+  border-bottom:1px solid rgba(255,255,255,.04);
+  padding:8px 16px;
+  display:flex;align-items:center;gap:8px;
+}
+.term-dot{width:9px;height:9px;border-radius:50%;}
+.td-r{background:#ff5f57;}.td-y{background:#febc2e;}.td-g{background:#28c840;}
+.term-title{font-family:'Share Tech Mono',monospace;font-size:9px;letter-spacing:.2em;color:var(--txd);margin-left:auto;}
+.term-body{
+  padding:14px 18px;max-height:260px;overflow-y:auto;font-family:'Share Tech Mono',monospace;font-size:11px;line-height:2;
+  scrollbar-width:thin;scrollbar-color:rgba(204,0,0,.15) transparent;
+}
+.tl{display:block;white-space:pre-wrap;word-break:break-all;}
+.tl.pr{color:rgba(255,255,255,.2);}
+.tl.cm{color:#fff;}
+.tl.out{color:rgba(255,255,255,.4);}
+.tl.ok{color:rgba(0,200,80,.65);}
+.tl.er{color:rgba(204,0,0,.7);}
+.tl.wn{color:rgba(255,176,0,.65);}
+.tl.if{color:rgba(0,150,255,.55);}
+.tl.em{display:block;height:.7em;}
+.term-in-row{
+  border-top:1px solid rgba(255,255,255,.04);
+  padding:9px 18px;display:flex;align-items:center;gap:10px;
+}
+.term-prompt{font-family:'Share Tech Mono',monospace;font-size:11px;color:rgba(255,255,255,.18);white-space:nowrap;}
+.term-input{
+  flex:1;background:transparent;border:none;outline:none;
+  color:#fff;font-family:'Share Tech Mono',monospace;font-size:11px;
+  caret-color:var(--r2);
+}
+
+/* ══════════════════════════════════
+   CAPABILITIES
+══════════════════════════════════ */
+.cap-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:1px;background:var(--bdrw);}
+.cap{
+  padding:28px;background:var(--s2);
+  border-left:2px solid transparent;
+  transition:all .25s;
+}
+.cap:hover{background:var(--s1);border-left-color:var(--r);}
+.cap-n{font-family:'Share Tech Mono',monospace;font-size:9px;letter-spacing:.28em;color:rgba(204,0,0,.3);margin-bottom:14px;}
+.cap-t{font-family:'Bebas Neue',monospace;font-size:18px;letter-spacing:.06em;color:#fff;margin-bottom:6px;}
+.cap-d{font-size:13px;color:var(--txd);line-height:1.7;font-weight:300;}
+
+/* ══════════════════════════════════
+   TIMELINE / METHODOLOGY
+══════════════════════════════════ */
+.timeline{display:flex;gap:0;border:1px solid var(--bdrw);}
+.tl-step{
+  flex:1;padding:24px;border-right:1px solid var(--bdrw);
+  position:relative;
+}
+.tl-step:last-child{border-right:none;}
+.tl-step::after{
+  content:'';position:absolute;top:50%;right:-1px;
+  width:6px;height:6px;background:var(--r);
+  border-radius:50%;transform:translate(50%,-50%);
+  box-shadow:0 0 8px var(--r);
+}
+.tl-step:last-child::after{display:none;}
+.tl-num{font-family:'Bebas Neue',monospace;font-size:28px;color:rgba(204,0,0,.2);margin-bottom:6px;}
+.tl-name{font-family:'Share Tech Mono',monospace;font-size:10px;letter-spacing:.18em;text-transform:uppercase;color:rgba(255,255,255,.5);margin-bottom:6px;}
+.tl-desc{font-size:12px;color:var(--txd);line-height:1.6;font-weight:300;}
+
+/* ══════════════════════════════════
+   FOOTER
+══════════════════════════════════ */
+footer{
+  padding:36px 52px;border-top:1px solid var(--bdrw);
+  display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:14px;
+}
+.ft-logo{font-family:'Bebas Neue',monospace;font-size:16px;letter-spacing:.2em;color:#181818;}
+.ft-note{font-family:'Share Tech Mono',monospace;font-size:9px;color:#1a1a1a;letter-spacing:.14em;}
+
+/* scrollbar */
+::-webkit-scrollbar{width:3px;height:3px;}
+::-webkit-scrollbar-track{background:transparent;}
+::-webkit-scrollbar-thumb{background:#1a1a1a;}
+
+@media(max-width:960px){
+  .hero{grid-template-columns:1fr;}
+  .hero-right{display:none;}
+  .site-header .header-main{padding:0 24px;}
+  .header-topbar{padding:5px 24px;}
+  .nav-items .nav-item:nth-child(n+4){display:none;}
+  .hero-left{padding:120px 24px 60px;}
+  .sec{padding:60px 24px;}
+  .stats-inner{grid-template-columns:1fr 1fr;}
+  .tools-grid{grid-template-columns:1fr;}
+  .cap-grid{grid-template-columns:1fr 1fr;}
+  .timeline{flex-direction:column;}
+  .tl-step::after{display:none;}
+  footer{padding:28px 24px;}
+}
+</style>
+</head>
+<body>
+
+<!-- Pixel cursor canvas -->
+<canvas id="px" width="16" height="16"></canvas>
+
+<div id="spb"></div>
+
+<!-- ══ HEADER ══ -->
+<header class="site-header">
+  <div class="header-topbar">
+    <div class="topbar-left">
+      <span class="live">● LIVE</span>
+      <span>Session: 7F:3A:12:FF:00:4E</span>
+      <span>TOR: Active</span>
+      <span>Encrypted</span>
+    </div>
+    <div class="topbar-right">
+      <span id="sysTime"></span>
+    </div>
+  </div>
+  <div class="header-main">
+    <!-- Logo -->
+    <div class="logo-block">
+      <div class="logo-mark">
+        <svg viewBox="0 0 38 44">
+          <polygon class="hex-fill" points="19,2 36,11 36,33 19,42 2,33 2,11"/>
+          <polygon class="hex-inner" points="19,2 36,11 36,33 19,42 2,33 2,11"/>
+          <polygon class="hex-dot" points="19,16 26,20 26,28 19,32 12,28 12,20" opacity=".7"/>
+          <circle class="hex-dot" cx="19" cy="24" r="3"/>
+        </svg>
+      </div>
+      <div class="logo-word">
+        <span class="logo-name" data-t="INTRUDER">INTRUDER</span>
+        <span class="logo-tag">Security Research Suite</span>
+      </div>
+    </div>
+    <!-- Nav -->
+    <nav class="nav-items">
+      <a class="nav-item" href="#tools">Tools</a>
+      <a class="nav-item" href="#terminal">Terminal</a>
+      <a class="nav-item" href="#stats">Metrics</a>
+      <a class="nav-item" href="#methodology">Methodology</a>
+      <a class="nav-item" href="#capabilities">Capabilities</a>
+    </nav>
+    <div class="nav-right">
+      <span class="nav-badge">v4.2.1 STABLE</span>
+      <a class="nav-cta" href="#tools">Launch Suite</a>
+    </div>
+  </div>
+</header>
+
+<!-- ══ HERO ══ -->
+<section class="hero">
+  <div class="hero-left">
+    <div class="hero-eyebrow">
+      <div class="eyebrow-line"></div>
+      Advanced Penetration Testing Framework
+    </div>
+    <h1 class="hero-title">
+      ADVANCED<br>
+      <span class="red">SECURITY</span><br>
+      <span class="ghost">RESEARCH</span>
+    </h1>
+    <div class="hero-version">PLATFORM</div>
+    <p class="hero-desc">Enterprise-grade vulnerability assessment and penetration testing suite. Identify attack surfaces, map network topology, and deliver precision intelligence — for authorized security professionals.</p>
+    <div class="hero-ctas">
+      <a href="#tools" class="btn-p">Access Suite</a>
+      <a href="#capabilities" class="btn-g">Documentation</a>
+    </div>
+  </div>
+
+  <div class="hero-right">
+    <div class="panel-title"><div class="ldot"></div>Live Threat Feed</div>
+    <div class="act-feed" id="actFeed"></div>
+    <div class="net-graph-wrap">
+      <div class="net-graph-label">Network Traffic</div>
+      <canvas id="netGraph"></canvas>
+    </div>
+  </div>
+</section>
+
+<!-- ══ STATS ══ -->
+<section class="stats-sec" id="stats">
+  <div class="stats-inner">
+    <div class="sc sr"><div class="sc-lbl">Vulnerabilities Found</div><div class="sc-num"><span class="sv" data-t="3847">0</span></div><div class="sc-bar"><div class="sc-bar-fill" style="--p:78%"></div></div><div class="sc-sub">across all assessments</div></div>
+    <div class="sc sr" style="transition-delay:.08s"><div class="sc-lbl">Networks Audited</div><div class="sc-num"><span class="sv" data-t="512">0</span><span class="u">+</span></div><div class="sc-bar"><div class="sc-bar-fill" style="--p:62%"></div></div><div class="sc-sub">enterprise clients</div></div>
+    <div class="sc sr" style="transition-delay:.16s"><div class="sc-lbl">CVEs Disclosed</div><div class="sc-num"><span class="sv" data-t="94">0</span></div><div class="sc-bar"><div class="sc-bar-fill" style="--p:44%"></div></div><div class="sc-sub">responsibly reported</div></div>
+    <div class="sc sr" style="transition-delay:.24s"><div class="sc-lbl">Avg Response</div><div class="sc-num"><span class="sv" data-t="48">0</span><span class="u">h</span></div><div class="sc-bar"><div class="sc-bar-fill" style="--p:55%"></div></div><div class="sc-sub">to critical findings</div></div>
+    <div class="sc sr" style="transition-delay:.32s"><div class="sc-lbl">Platform Uptime</div><div class="sc-num"><span class="sv" data-t="99">0</span><span class="u">.9%</span></div><div class="sc-bar"><div class="sc-bar-fill" style="--p:99%"></div></div><div class="sc-sub">12-month rolling</div></div>
+  </div>
+</section>
+
+<!-- ══ TOOLS ══ -->
+<section class="sec" id="tools">
+  <div class="sec-ey sr">// Active Toolkit</div>
+  <div class="sec-hd sr">Security Instruments</div>
+
+  <div class="tools-grid">
+
+    <!-- PORT SCANNER -->
+    <div class="tp sr">
+      <div class="tp-hdr"><span class="tp-name">Network Recon</span><span class="tp-stat rdy">Ready</span></div>
+      <input class="fi" id="sIP" placeholder="Target IP / CIDR" value="192.168.1.1">
+      <div class="frow">
+        <input class="fi" id="sFrom" value="1" style="width:72px" placeholder="From">
+        <input class="fi" id="sTo"   value="1024" style="width:72px" placeholder="To">
+        <button class="tb sm" onclick="runScan()">▶ Scan</button>
+      </div>
+      <div class="tout" id="scanOut"><span class="t-dim">— awaiting target —</span></div>
+    </div>
+
+    <!-- HASH ENGINE -->
+    <div class="tp sr" style="transition-delay:.08s">
+      <div class="tp-hdr"><span class="tp-name">Cryptographic Engine</span><span class="tp-stat rdy">Ready</span></div>
+      <div class="algo-row">
+        <button class="ap on" data-a="sha256">SHA-256</button>
+        <button class="ap" data-a="sha1">SHA-1</button>
+        <button class="ap" data-a="b64">BASE64</button>
+        <button class="ap" data-a="hex">HEX</button>
+        <button class="ap" data-a="md5">MD5</button>
+      </div>
+      <input class="fi" id="hashIn" placeholder="Plaintext input...">
+      <button class="tb" onclick="doHash()">Encode / Hash</button>
+      <div class="hout" id="hashOut"></div>
+    </div>
+
+    <!-- PASSWORD ANALYZER -->
+    <div class="tp sr" style="transition-delay:.12s">
+      <div class="tp-hdr"><span class="tp-name">Password Analyzer</span><span class="tp-stat rdy">Ready</span></div>
+      <input class="fi" id="pwIn" placeholder="Enter password to analyze..." type="password" oninput="analyzePW(this.value)">
+      <div class="pmeter"><div class="pmfill" id="pmFill"></div></div>
+      <div class="pscore" id="pwScore">— enter a password to analyze —</div>
+      <div class="tout" id="pwDetails" style="margin-top:10px;min-height:60px;"></div>
+    </div>
+
+    <!-- PACKET MONITOR -->
+    <div class="tp sr" style="transition-delay:.16s">
+      <div class="tp-hdr"><span class="tp-name">Packet Monitor</span><span class="tp-stat lv">Live</span></div>
+      <div class="pkt-wrap" id="pktWrap"></div>
+    </div>
+
+    <!-- ENCODER / DECODER -->
+    <div class="tp sr" style="transition-delay:.2s">
+      <div class="tp-hdr"><span class="tp-name">Encoder / Decoder</span><span class="tp-stat rdy">Ready</span></div>
+      <div class="etabs">
+        <button class="etab on" data-m="enc">Encode</button>
+        <button class="etab" data-m="dec">Decode</button>
+        <button class="etab" data-m="url">URL</button>
+      </div>
+      <div class="algo-row" id="encAlgos">
+        <button class="ap on" data-a="b64">BASE64</button>
+        <button class="ap" data-a="hex">HEX</button>
+        <button class="ap" data-a="uri">URI</button>
+        <button class="ap" data-a="html">HTML</button>
+      </div>
+      <input class="fi" id="encIn" placeholder="Input text...">
+      <button class="tb" onclick="doEncode()">Process</button>
+      <div class="hout" id="encOut"></div>
+    </div>
+
+    <!-- PING TOOL -->
+    <div class="tp sr" style="transition-delay:.24s">
+      <div class="tp-hdr"><span class="tp-name">Connectivity Probe</span><span class="tp-stat rdy">Ready</span></div>
+      <div class="frow">
+        <input class="fi" id="pingIP" placeholder="Host / IP" style="flex:1;margin:0">
+        <input class="fi" id="pingCount" value="4" style="width:52px;margin:0" placeholder="×">
+        <button class="tb sm" onclick="doPing()">Ping</button>
+      </div>
+      <div class="ping-result" id="pingRes">— enter a host to probe —</div>
+    </div>
+
+    <!-- IP INTEL -->
+    <div class="tp sr" style="transition-delay:.28s">
+      <div class="tp-hdr"><span class="tp-name">IP Intelligence</span><span class="tp-stat rdy">Ready</span></div>
+      <div class="frow">
+        <input class="fi" id="ipIn" placeholder="IP address or domain..." style="flex:1;margin:0">
+        <button class="tb sm" onclick="doLookup()">Lookup</button>
+      </div>
+      <button class="tb sec" onclick="myIP()" style="margin-top:8px">Detect My IP</button>
+      <div class="ifields" id="iFields"></div>
+    </div>
+
+    <!-- WHOIS LOOKUP -->
+    <div class="tp sr" style="transition-delay:.32s">
+      <div class="tp-hdr"><span class="tp-name">Domain Intelligence</span><span class="tp-stat rdy">Ready</span></div>
+      <div class="frow">
+        <input class="fi" id="whoisIn" placeholder="domain.com" style="flex:1;margin:0">
+        <button class="tb sm" onclick="doWhois()">Query</button>
+      </div>
+      <div class="whois-out" id="whoisOut"></div>
+    </div>
+
+  </div>
+</section>
+
+<!-- ══ TERMINAL ══ -->
+<section class="sec" id="terminal">
+  <div class="sec-ey sr">// Command Interface</div>
+  <div class="sec-hd sr">Interactive Shell</div>
+  <div class="terminal-wrap sr">
+    <div class="term-bar">
+      <div class="term-dot td-r"></div><div class="term-dot td-y"></div><div class="term-dot td-g"></div>
+      <span class="term-title">INTRUDER SHELL — [root@intruder]# — ENCRYPTED SESSION</span>
+    </div>
+    <div class="term-body" id="tBody"></div>
+    <div class="term-in-row">
+      <span class="term-prompt">[root@intruder ~]#</span>
+      <input class="term-input" id="tIn" placeholder="type a command..." autocomplete="off" spellcheck="false">
+    </div>
+  </div>
+</section>
+
+<!-- ══ METHODOLOGY ══ -->
+<section class="sec" id="methodology">
+  <div class="sec-ey sr">// Engagement Process</div>
+  <div class="sec-hd sr">Methodology</div>
+  <div class="timeline sr">
+    <div class="tl-step"><div class="tl-num">01</div><div class="tl-name">Reconnaissance</div><div class="tl-desc">Passive and active information gathering. OSINT sweep, DNS enumeration, surface mapping.</div></div>
+    <div class="tl-step"><div class="tl-num">02</div><div class="tl-name">Scanning</div><div class="tl-desc">Port discovery, service fingerprinting, OS detection, network topology mapping.</div></div>
+    <div class="tl-step"><div class="tl-num">03</div><div class="tl-name">Enumeration</div><div class="tl-desc">User accounts, shares, services, application versions. CVE correlation against findings.</div></div>
+    <div class="tl-step"><div class="tl-num">04</div><div class="tl-name">Exploitation</div><div class="tl-desc">Controlled exploitation of confirmed vulnerabilities within authorized scope and rules of engagement.</div></div>
+    <div class="tl-step"><div class="tl-num">05</div><div class="tl-name">Reporting</div><div class="tl-desc">Severity-ranked findings, proof-of-concept, and actionable remediation guidance delivered.</div></div>
+  </div>
+</section>
+
+<!-- ══ CAPABILITIES ══ -->
+<section class="sec" id="capabilities">
+  <div class="sec-ey sr">// Platform Capabilities</div>
+  <div class="sec-hd sr">What It Does</div>
+  <div class="cap-grid">
+    <div class="cap sr"><div class="cap-n">01</div><div class="cap-t">Surface Mapping</div><p class="cap-d">Automated discovery of exposed services, open ports, and misconfigured endpoints across IPv4 and IPv6 address ranges.</p></div>
+    <div class="cap sr" style="transition-delay:.06s"><div class="cap-n">02</div><div class="cap-t">Vulnerability Assessment</div><p class="cap-d">CVE database correlation against detected service versions. Severity-ranked output with remediation guidance included.</p></div>
+    <div class="cap sr" style="transition-delay:.12s"><div class="cap-n">03</div><div class="cap-t">Traffic Analysis</div><p class="cap-d">Real-time packet inspection, protocol identification, and anomaly flagging across monitored network interfaces.</p></div>
+    <div class="cap sr" style="transition-delay:.04s"><div class="cap-n">04</div><div class="cap-t">Cryptographic Toolkit</div><p class="cap-d">Hash generation, multi-format encoding/decoding, and key analysis utilities built for forensic audit workflows.</p></div>
+    <div class="cap sr" style="transition-delay:.1s"><div class="cap-n">05</div><div class="cap-t">OSINT Integration</div><p class="cap-d">IP geolocation, ASN lookup, WHOIS aggregation, and passive reconnaissance from open-source intelligence sources.</p></div>
+    <div class="cap sr" style="transition-delay:.16s"><div class="cap-n">06</div><div class="cap-t">Credential Auditing</div><p class="cap-d">Password strength analysis, complexity scoring, and entropy calculation to evaluate credential policy compliance.</p></div>
+  </div>
+</section>
+
+<!-- ══ FOOTER ══ -->
+<footer>
+  <div class="ft-logo">INTRUDER</div>
+  <div class="ft-note">For authorized security research and penetration testing only. Always obtain written permission before testing systems.</div>
+  <div class="ft-note">© 2025 INTRUDER SUITE — v4.2.1</div>
+</footer>
+
+<script>
+/* ═══════════════════════════
+   PIXEL CURSOR
+═══════════════════════════ */
+(function(){
+  const c=document.getElementById('px');
+  const ctx=c.getContext('2d');
+  ctx.imageSmoothingEnabled=false;
+
+  // pixel arrow — Windows pointer style
+  const px=[
+    [1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
+    [1,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
+    [1,2,1,0,0,0,0,0,0,0,0,0,0,0,0,0],
+    [1,2,2,1,0,0,0,0,0,0,0,0,0,0,0,0],
+    [1,2,2,2,1,0,0,0,0,0,0,0,0,0,0,0],
+    [1,2,2,2,2,1,0,0,0,0,0,0,0,0,0,0],
+    [1,2,2,2,2,2,1,0,0,0,0,0,0,0,0,0],
+    [1,2,2,2,2,2,2,1,0,0,0,0,0,0,0,0],
+    [1,2,2,2,2,2,2,2,1,0,0,0,0,0,0,0],
+    [1,2,2,2,2,2,2,2,2,1,0,0,0,0,0,0],
+    [1,2,2,2,2,2,1,1,1,1,0,0,0,0,0,0],
+    [1,2,2,1,2,2,1,0,0,0,0,0,0,0,0,0],
+    [1,2,1,0,1,2,2,1,0,0,0,0,0,0,0,0],
+    [1,1,0,0,0,1,2,2,1,0,0,0,0,0,0,0],
+    [0,0,0,0,0,1,2,2,1,0,0,0,0,0,0,0],
+    [0,0,0,0,0,0,1,1,0,0,0,0,0,0,0,0],
+  ];
+  // 0=transparent, 1=black outline, 2=white fill, 3=red accent
+  const cols={1:'#000000',2:'#ffffff',3:'#cc0000'};
+
+  px.forEach((row,y)=>row.forEach((v,x)=>{
+    if(v===0)return;
+    ctx.fillStyle=cols[v]||'#fff';
+    ctx.fillRect(x,y,1,1);
+  }));
+
+  // red tint on inner body
+  ctx.fillStyle='rgba(204,0,0,0.06)';
+  ctx.fillRect(1,1,8,13);
+
+  document.addEventListener('mousemove',e=>{
+    c.style.left=e.clientX+'px';
+    c.style.top=e.clientY+'px';
+  });
+})();
+
+/* ═══════════════════════════
+   SCROLL PROGRESS + IO
+═══════════════════════════ */
+window.addEventListener('scroll',()=>{
+  const p=window.scrollY/(document.body.scrollHeight-window.innerHeight)*100;
+  document.getElementById('spb').style.width=p+'%';
+});
+const IO=new IntersectionObserver(en=>{
+  en.forEach(e=>{
+    if(e.isIntersecting){
+      e.target.classList.add('vis');
+      e.target.querySelectorAll('.sv[data-t]').forEach(animNum);
+    }
+  });
+},{threshold:.12});
+document.querySelectorAll('.sr,.sr-l,.sr-r,.sc').forEach(el=>IO.observe(el));
+
+function animNum(el){
+  const t=parseInt(el.dataset.t),d=1500,s=Date.now();
+  const iv=setInterval(()=>{
+    const p=Math.min((Date.now()-s)/d,1),e=1-Math.pow(1-p,3);
+    el.textContent=Math.floor(e*t).toLocaleString();
+    if(p>=1){clearInterval(iv);el.textContent=t.toLocaleString();}
+  },18);
+}
+
+/* ═══════════════════════════
+   SYSTEM TIME
+═══════════════════════════ */
+(function tick(){
+  const n=new Date();
+  const p=v=>String(v).padStart(2,'0');
+  document.getElementById('sysTime').textContent=
+    `${p(n.getHours())}:${p(n.getMinutes())}:${p(n.getSeconds())} UTC`;
+  setTimeout(tick,1000);
+})();
+
+/* ═══════════════════════════
+   LIVE THREAT FEED
+═══════════════════════════ */
+(function(){
+  const feed=document.getElementById('actFeed');
+  const evs=[
+    {type:'crit',msg:'SQLi vector detected on /api/auth'},
+    {type:'warn',msg:'TLS 1.0 active — port 443'},
+    {type:'info',msg:'Scan completed — 8 hosts up'},
+    {type:'crit',msg:'Default creds accepted — SSH 22'},
+    {type:'warn',msg:'Directory listing at /backup/'},
+    {type:'ok',  msg:'Patch confirmed — CVE-2024-1234'},
+    {type:'crit',msg:'CORS wildcard on api.target.io'},
+    {type:'warn',msg:'Open redirect at /redirect?url='},
+    {type:'info',msg:'Report generated: audit_091.pdf'},
+    {type:'crit',msg:'XXE injection — /api/xml endpoint'},
+    {type:'warn',msg:'Weak cipher suite on :8443'},
+    {type:'ok',  msg:'Access control test passed'},
+  ];
+  let i=0;
+  const p=v=>String(v).padStart(2,'0');
+  function add(){
+    const n=new Date();
+    const ts=`${p(n.getHours())}:${p(n.getMinutes())}:${p(n.getSeconds())}`;
+    const ev=evs[i%evs.length]; i++;
+    const el=document.createElement('div');
+    el.className='act-entry';
+    el.innerHTML=`<div class="ae-top"><span class="ae-time">${ts}</span><span class="ae-type ${ev.type}">${ev.type.toUpperCase()}</span></div><div class="ae-msg">${ev.msg}</div>`;
+    feed.appendChild(el);
+    if(feed.children.length>7) feed.removeChild(feed.firstChild);
+    feed.scrollTop=feed.scrollHeight;
+  }
+  for(let j=0;j<5;j++) add();
+  setInterval(add,2400);
+})();
+
+/* ═══════════════════════════
+   NETWORK TRAFFIC GRAPH
+═══════════════════════════ */
+(function(){
+  const c=document.getElementById('netGraph');
+  if(!c) return;
+  const ctx=c.getContext('2d');
+  const data=Array.from({length:60},()=>Math.random()*60+10);
+  let frame=0;
+
+  function draw(){
+    const W=c.width=c.offsetWidth, H=c.height=c.offsetHeight;
+    ctx.clearRect(0,0,W,H);
+    data.push(Math.max(5,Math.min(95, data[data.length-1]+(Math.random()-0.48)*18)));
+    if(data.length>80) data.shift();
+
+    const step=W/(data.length-1);
+    ctx.beginPath();
+    data.forEach((v,i)=>{
+      const x=i*step, y=H-(v/100)*H;
+      i===0?ctx.moveTo(x,y):ctx.lineTo(x,y);
+    });
+    ctx.strokeStyle='rgba(204,0,0,0.5)';
+    ctx.lineWidth=1;
+    ctx.stroke();
+
+    // fill under
+    ctx.lineTo(W,H); ctx.lineTo(0,H); ctx.closePath();
+    ctx.fillStyle='rgba(204,0,0,0.04)';
+    ctx.fill();
+
+    requestAnimationFrame(draw);
+  }
+  draw();
+})();
+
+/* ═══════════════════════════
+   PORT SCANNER
+═══════════════════════════ */
+const SVC={21:'FTP',22:'SSH',23:'Telnet',25:'SMTP',53:'DNS',80:'HTTP',110:'POP3',143:'IMAP',443:'HTTPS',445:'SMB',1433:'MSSQL',3306:'MySQL',3389:'RDP',5432:'PostgreSQL',5900:'VNC',6379:'Redis',8080:'HTTP-Alt',8443:'HTTPS-Alt',9200:'Elasticsearch',27017:'MongoDB'};
+const DANGER=[21,23,445,3389,5900,4444,31337,1433];
+let scanning=false;
+function runScan(){
+  if(scanning)return;
+  scanning=true;
+  const ip=document.getElementById('sIP').value||'192.168.1.1';
+  const fr=parseInt(document.getElementById('sFrom').value)||1;
+  const to=Math.min(parseInt(document.getElementById('sTo').value)||100,fr+80);
+  const out=document.getElementById('scanOut');
+  out.innerHTML=`<span class="t-crit">Scanning ${ip} [${fr}-${to}]</span>\n`;
+  let p=fr;
+  function nx(){
+    if(p>to){out.innerHTML+=`<span class="t-dim">Scan complete.</span>`;out.scrollTop=out.scrollHeight;scanning=false;return;}
+    const r=Math.random();
+    const open=DANGER.includes(p)?r>.2:[22,80,443,3306,8080,8443].includes(p)?r>.25:r>.91;
+    if(open){
+      const s=SVC[p]||'unknown';
+      const warn=DANGER.includes(p)?` <span class="t-crit">[HIGH RISK]</span>`:'';
+      out.innerHTML+=`<span class="t-open">${String(p).padEnd(7)} OPEN    ${s}</span>${warn}\n`;
+      out.scrollTop=out.scrollHeight;
+    }
+    p++; setTimeout(nx,12+Math.random()*8);
+  }
+  setTimeout(nx,150);
+}
+
+/* ═══════════════════════════
+   HASH ENGINE
+═══════════════════════════ */
+let hAlgo='sha256';
+document.querySelectorAll('.ap[data-a]').forEach(b=>{
+  b.addEventListener('click',function(){
+    this.closest('.algo-row').querySelectorAll('.ap').forEach(x=>x.classList.remove('on'));
+    this.classList.add('on');
+    const tool=this.closest('.tp');
+    if(tool.contains(document.getElementById('hashIn'))) hAlgo=this.dataset.a;
+    else encAlgo=this.dataset.a;
+  });
+});
+document.getElementById('hashIn').addEventListener('keydown',e=>{if(e.key==='Enter')doHash();});
+async function doHash(){
+  const txt=document.getElementById('hashIn').value;
+  const out=document.getElementById('hashOut');
+  if(!txt){out.className='hout on';out.textContent='⚠ No input.';return;}
+  out.className='hout on';out.textContent='Computing...';
+  const r=await computeHash(txt,hAlgo);
+  typeOut(out,r);
+}
+async function computeHash(txt,algo){
+  if(algo==='sha256'||algo==='sha1'){
+    const buf=new TextEncoder().encode(txt);
+    const h=await crypto.subtle.digest(algo==='sha256'?'SHA-256':'SHA-1',buf);
+    return [...new Uint8Array(h)].map(b=>b.toString(16).padStart(2,'0')).join('');
+  }
+  if(algo==='b64') return btoa(unescape(encodeURIComponent(txt)));
+  if(algo==='hex') return [...txt].map(c=>c.charCodeAt(0).toString(16).padStart(2,'0')).join(' ');
+  let h=0;for(let i=0;i<txt.length;i++)h=(Math.imul(31,h)+txt.charCodeAt(i))|0;
+  const b=Math.abs(h).toString(16).padStart(8,'0');return(b+b+b+b).slice(0,32);
+}
+function typeOut(el,str){el.textContent='';let i=0;const iv=setInterval(()=>{el.textContent+=str[i++];if(i>=str.length)clearInterval(iv);},9);}
+
+/* ═══════════════════════════
+   PASSWORD ANALYZER
+═══════════════════════════ */
+function analyzePW(pw){
+  const fill=document.getElementById('pmFill');
+  const score=document.getElementById('pwScore');
+  const details=document.getElementById('pwDetails');
+  if(!pw){fill.style.width='0%';score.textContent='— enter a password —';details.innerHTML='';return;}
+
+  let s=0;
+  const checks={
+    'Length ≥ 8':pw.length>=8,'Length ≥ 12':pw.length>=12,'Length ≥ 16':pw.length>=16,
+    'Uppercase':  /[A-Z]/.test(pw),'Lowercase':/[a-z]/.test(pw),
+    'Digits':     /\d/.test(pw),'Symbols':/[^A-Za-z0-9]/.test(pw),
+    'No common patterns':!/^(password|123|qwerty|admin)/i.test(pw),
+  };
+  Object.values(checks).forEach(v=>{if(v)s++;});
+
+  const pct=Math.round((s/8)*100);
+  fill.style.width=pct+'%';
+  fill.style.background=pct<35?'#cc0000':pct<65?'#ff8800':pct<85?'#ffb000':'#00c840';
+
+  const labels=['CRITICAL','WEAK','MODERATE','STRONG','ROBUST'];
+  const li=pct<20?0:pct<40?1:pct<65?2:pct<85?3:4;
+  score.textContent=`Strength: ${labels[li]} — Score ${s}/8 — Entropy ≈ ${Math.round(pw.length*Math.log2(95))} bits`;
+
+  const rows=Object.entries(checks).map(([k,v])=>
+    `<span class="${v?'t-open':'t-crit'}">${v?'✓':'✗'} ${k}</span>\n`
+  ).join('');
+  details.innerHTML=rows;
+}
+
+/* ═══════════════════════════
+   ENCODER / DECODER
+═══════════════════════════ */
+let encAlgo='b64', encMode='enc';
+document.querySelectorAll('.etab').forEach(t=>{
+  t.addEventListener('click',function(){
+    document.querySelectorAll('.etab').forEach(x=>x.classList.remove('on'));
+    this.classList.add('on'); encMode=this.dataset.m;
+  });
+});
+function doEncode(){
+  const txt=document.getElementById('encIn').value;
+  const out=document.getElementById('encOut');
+  if(!txt){out.className='hout on';out.textContent='⚠ No input.';return;}
+  out.className='hout on';
+  let r='';
+  try{
+    if(encAlgo==='b64') r=encMode==='dec'?atob(txt):btoa(txt);
+    else if(encAlgo==='hex'){
+      if(encMode==='dec'){r=txt.split(' ').map(h=>String.fromCharCode(parseInt(h,16))).join('');}
+      else r=[...txt].map(c=>c.charCodeAt(0).toString(16).padStart(2,'0')).join(' ');
+    }
+    else if(encAlgo==='uri') r=encMode==='dec'?decodeURIComponent(txt):encodeURIComponent(txt);
+    else if(encAlgo==='html'){
+      if(encMode==='dec'){const d=document.createElement('div');d.innerHTML=txt;r=d.textContent;}
+      else r=txt.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+    }
+    typeOut(out,r||'(empty result)');
+  }catch{out.textContent='⚠ Decode failed — check input format.';}
+}
+
+/* ═══════════════════════════
+   PING TOOL (simulated)
+═══════════════════════════ */
+let pinging=false;
+function doPing(){
+  if(pinging)return;
+  const host=document.getElementById('pingIP').value.trim();
+  const count=Math.min(parseInt(document.getElementById('pingCount').value)||4,8);
+  const out=document.getElementById('pingRes');
+  if(!host){out.innerHTML='<span class="pg-fail">⚠ Enter a host.</span>';return;}
+  pinging=true;
+  out.innerHTML=`<span style="color:rgba(255,255,255,.2)">PING ${host}: 56 bytes of data</span>\n`;
+  let i=0;
+  function next(){
+    if(i>=count){
+      const loss=Math.random()>.9?'25%':'0%';
+      out.innerHTML+=`\n<span style="color:rgba(255,255,255,.18)">— ${host} ping statistics —\n${count} tx / ${count} rx / ${loss} loss</span>`;
+      pinging=false; return;
+    }
+    const ms=(8+Math.random()*80).toFixed(2);
+    const cls=parseFloat(ms)<30?'pg-ok':parseFloat(ms)<60?'pg-slow':'pg-fail';
+    out.innerHTML+=`<span class="${cls}">64 bytes from ${host}: icmp_seq=${++i} ttl=64 time=${ms} ms</span>\n`;
+    out.scrollTop=9999;
+    setTimeout(next,500);
+  }
+  setTimeout(next,200);
+}
+
+/* ═══════════════════════════
+   PACKET MONITOR
+═══════════════════════════ */
+(function(){
+  const w=document.getElementById('pktWrap');
+  const IPS=['10.0.0.','192.168.1.','172.16.0.','45.33.32.','8.8.'];
+  const PORTS=[80,443,22,53,3306,8080,25,3389,6379];
+  const TYPES=[{p:'TCP',c:'tcp'},{p:'UDP',c:'udp'},{p:'HTTP',c:'http'},{p:'!!!',c:'sus'}];
+  const INFO=['SYN ACK','GET /admin','SSH handshake','DNS query','Auth req','Data xfer','Port scan','Null byte','CONNECT'];
+  function p2(n){return String(n).padStart(2,'0');}
+  setInterval(()=>{
+    const n=new Date();
+    const ts=`${p2(n.getHours())}:${p2(n.getMinutes())}:${p2(n.getSeconds())}`;
+    const rn=Math.random();
+    const t=rn>.94?TYPES[3]:rn>.72?TYPES[2]:rn>.44?TYPES[1]:TYPES[0];
+    const src=IPS[Math.floor(Math.random()*IPS.length)]+(1+Math.floor(Math.random()*253));
+    const dp=PORTS[Math.floor(Math.random()*PORTS.length)];
+    const inf=INFO[Math.floor(Math.random()*INFO.length)];
+    const flag=t.c==='sus'?'<span class="pflag">ALERT</span>':'';
+    const row=document.createElement('div');
+    row.className='pr';
+    row.innerHTML=`<span style="color:rgba(255,255,255,.14)">${ts}</span><span class="pr${t.c}">${t.p}</span><span>${src}</span><span>${flag||`→:${dp} ${inf}`}</span>`;
+    w.prepend(row);
+    if(w.children.length>18) w.removeChild(w.lastChild);
+  },380);
+})();
+
+/* ═══════════════════════════
+   IP INTEL
+═══════════════════════════ */
+function renderFields(d){
+  const el=document.getElementById('iFields');
+  el.className='ifields on';
+  const f=[['IP',d.ip||'—'],['Country',d.country_name||'—'],['Region',d.region||'—'],['City',d.city||'—'],['ISP',d.org||'—'],['Timezone',d.timezone||'—'],['Lat',d.latitude||'—'],['Long',d.longitude||'—']];
+  el.innerHTML=f.map(([k,v])=>`<div class="ifield"><div class="ik">${k}</div><div class="iv">${v}</div></div>`).join('');
+}
+function setLoading(){
+  const el=document.getElementById('iFields');el.className='ifields on';
+  el.innerHTML=['IP','Country','Region','City','ISP','Timezone','Lat','Long'].map(k=>`<div class="ifield"><div class="ik">${k}</div><div class="iv ld">resolving...</div></div>`).join('');
+}
+async function doLookup(){
+  const ip=document.getElementById('ipIn').value.trim();if(!ip)return;
+  setLoading();
+  try{const r=await fetch(`https://ipapi.co/${ip}/json/`);renderFields(await r.json());}
+  catch{document.getElementById('iFields').innerHTML='<div class="ifield" style="grid-column:1/-1"><div class="iv" style="color:rgba(204,0,0,.65)">Lookup failed.</div></div>';document.getElementById('iFields').className='ifields on';}
+}
+async function myIP(){
+  setLoading();
+  try{const r=await fetch('https://ipapi.co/json/');const d=await r.json();document.getElementById('ipIn').value=d.ip||'';renderFields(d);}
+  catch{}
+}
+document.getElementById('ipIn').addEventListener('keydown',e=>{if(e.key==='Enter')doLookup();});
+
+/* ═══════════════════════════
+   WHOIS (simulated structured)
+═══════════════════════════ */
+function doWhois(){
+  const d=document.getElementById('whoisIn').value.trim();
+  const out=document.getElementById('whoisOut');
+  if(!d){out.className='whois-out on';out.textContent='⚠ Enter a domain.';return;}
+  out.className='whois-out on';
+  out.textContent='Querying WHOIS...';
+  const tlds={'.com':'Verisign','net':'Verisign','org':'PIR','io':'ICANN'};
+  const tld=d.split('.').pop();
+  const reg=tlds['.'+tld]||'IANA';
+  const created=`${2010+Math.floor(Math.random()*12)}-0${1+Math.floor(Math.random()*9)}-${10+Math.floor(Math.random()*18)}`;
+  const exp=`${2025+Math.floor(Math.random()*4)}-0${1+Math.floor(Math.random()*9)}-${10+Math.floor(Math.random()*18)}`;
+  setTimeout(()=>{
+    out.innerHTML=`<span class="winfo">Domain:       ${d}</span>\n`+
+      `<span class="winfo">Registrar:    ${reg}</span>\n`+
+      `<span class="wok" >Status:       clientTransferProhibited</span>\n`+
+      `<span class="winfo">Created:      ${created}</span>\n`+
+      `<span class="winfo">Expires:      ${exp}</span>\n`+
+      `<span class="winfo">NS1:          ns1.${d}</span>\n`+
+      `<span class="winfo">NS2:          ns2.${d}</span>\n`+
+      `<span style="color:rgba(255,255,255,.15)">DNSSEC:       unsigned</span>`;
+  },600);
+}
+document.getElementById('whoisIn').addEventListener('keydown',e=>{if(e.key==='Enter')doWhois();});
+
+/* ═══════════════════════════
+   TERMINAL
+═══════════════════════════ */
+(function(){
+  const body=document.getElementById('tBody');
+  const inp=document.getElementById('tIn');
+  const hist=[]; let hi=-1;
+
+  const CMDS={
+    help:()=>[
+      {c:'if',v:'Available commands:'},
+      {c:'out',v:'  help        whoami      ls          ps'},
+      {c:'out',v:'  netstat     ifconfig    uname       date'},
+      {c:'out',v:'  clear       ping <ip>   cat /etc/passwd'},
+      {c:'out',v:'  nmap <ip>   id          env         uptime'},
+    ],
+    whoami:()=>[{c:'ok',v:'root'},{c:'out',v:'uid=0(root) gid=0(root) groups=0(root)'}],
+    id:()=>[{c:'out',v:'uid=0(root) gid=0(root) groups=0(root),4(adm),24(cdrom),27(sudo)'}],
+    ls:()=>[
+      {c:'out',v:'total 64'},
+      {c:'out',v:'drwxr-xr-x  exploit_kit/     payloads/'},
+      {c:'wn', v:'-rw-r--r--  shadow.bak       private.key'},
+      {c:'ok', v:'-rwxr-xr-x  intruder.sh      scanner.py'},
+      {c:'out',v:'-rw-------  audit_log.txt    config.enc'},
+    ],
+    ps:()=>[
+      {c:'out',v:'PID    CMD'},
+      {c:'out',v:'1      /sbin/init'},
+      {c:'out',v:'312    sshd'},
+      {c:'out',v:'891    nginx -g daemon off'},
+      {c:'wn', v:'2047   ./scanner.py  [active]'},
+      {c:'er', v:'2201   ./shell.elf   [suspicious]'},
+    ],
+    netstat:()=>[
+      {c:'out',v:'Proto  Local          Foreign        State'},
+      {c:'out',v:'tcp    0.0.0.0:22     *:*            LISTEN'},
+      {c:'out',v:'tcp    0.0.0.0:443    *:*            LISTEN'},
+      {c:'wn', v:'tcp    10.0.0.1:4444  192.168.1.9:52341 ESTABLISHED'},
+      {c:'er', v:'tcp    127.0.0.1:31337 *:*           LISTEN [!]'},
+    ],
+    ifconfig:()=>[
+      {c:'if', v:'eth0:  inet 10.0.0.4  netmask 255.255.255.0'},
+      {c:'out',v:'       ether 02:42:ac:11:00:04  MTU:1500'},
+      {c:'if', v:'tun0:  inet 10.8.0.1  P-t-P:10.8.0.2 [TOR]'},
+      {c:'out',v:'       RX:1,847 packets  TX:2,203 packets'},
+    ],
+    uname:()=>[{c:'out',v:'Linux intruder 6.1.0-kali7-amd64 #1 SMP x86_64 GNU/Linux'}],
+    date:()=>[{c:'out',v:new Date().toString()}],
+    uptime:()=>[{c:'out',v:`up ${Math.floor(Math.random()*60)+2} days, ${Math.floor(Math.random()*24)}:${Math.floor(Math.random()*60)}, load average: 0.${Math.floor(Math.random()*9)}2`}],
+    env:()=>[
+      {c:'out',v:'SHELL=/bin/bash'},
+      {c:'out',v:'HOME=/root'},
+      {c:'wn', v:'TOR_PROXY=socks5://127.0.0.1:9050'},
+      {c:'out',v:'PATH=/usr/local/sbin:/usr/sbin:/usr/bin'},
+    ],
+    'cat /etc/passwd':()=>[
+      {c:'wn', v:'root:x:0:0:root:/root:/bin/bash'},
+      {c:'out',v:'daemon:x:1:1:daemon:/usr/sbin:/usr/sbin/nologin'},
+      {c:'out',v:'www-data:x:33:33:www-data:/var/www:/usr/sbin/nologin'},
+      {c:'wn', v:'operator:x:1000:1000:,,,:/home/operator:/bin/bash'},
+    ],
+    clear:()=>'CLR',
+  };
+
+  function addLine(cls,txt){
+    const s=document.createElement('span');
+    s.className=`tl ${cls}`;s.textContent=txt;
+    body.appendChild(s);body.scrollTop=body.scrollHeight;
+  }
+
+  function run(raw){
+    const cmd=raw.trim().toLowerCase();
+    addLine('pr','[root@intruder ~]# '+raw);
+    if(!cmd){addLine('em','');return;}
+
+    if(cmd.startsWith('ping ')){
+      const h=raw.split(' ')[1]||'0.0.0.0';
+      addLine('out',`PING ${h}: 56 bytes`);
+      let c=0;const iv=setInterval(()=>{
+        const ms=(10+Math.random()*50).toFixed(3);
+        addLine(parseFloat(ms)<30?'ok':'wn',`64 bytes from ${h}: icmp_seq=${++c} ttl=64 time=${ms} ms`);
+        body.scrollTop=body.scrollHeight;
+        if(c>=4){clearInterval(iv);addLine('out',`4 packets tx/rx, 0% loss`);addLine('em','');}
+      },500);
+      addLine('em','');return;
+    }
+
+    if(cmd.startsWith('nmap ')){
+      const h=raw.split(' ')[1]||'0.0.0.0';
+      addLine('if',`Starting nmap scan on ${h}`);
+      const ports=[22,80,443,3306,8080];
+      ports.forEach((p,i)=>setTimeout(()=>{
+        const s=SVC[p]||'unknown';
+        addLine('ok',`${String(p).padEnd(6)} open    ${s}`);
+        if(i===ports.length-1){addLine('out',`${ports.length} open ports found`);addLine('em','');}
+        body.scrollTop=body.scrollHeight;
+      },i*200+200));
+      addLine('em','');return;
+    }
+
+    const fn=CMDS[cmd];
+    if(!fn){addLine('er',`bash: ${cmd}: command not found`);}
+    else{
+      const r=fn();
+      if(r==='CLR'){body.innerHTML='';return;}
+      r.forEach(x=>addLine(x.c==='if'?'if':x.c==='ok'?'ok':x.c==='wn'?'wn':x.c==='er'?'er':'out',x.v));
+    }
+    addLine('em','');
+  }
+
+  // boot
+  const boot=[
+    {c:'if', v:'INTRUDER OS 4.2.1 — Secure Boot Sequence'},
+    {c:'out',v:'[  OK  ] Kernel modules loaded'},
+    {c:'out',v:'[  OK  ] Encrypted volumes mounted'},
+    {c:'wn', v:'[ WARN ] Firewall bypass active'},
+    {c:'out',v:'[  OK  ] Tor circuit established'},
+    {c:'out',v:'[  OK  ] MAC randomization active'},
+    {c:'ok', v:'[  OK  ] Root shell ready — session encrypted'},
+    {c:'em', v:''},
+    {c:'if', v:"Type 'help' for available commands."},
+    {c:'em', v:''},
+  ];
+  let bi=0;
+  const biv=setInterval(()=>{
+    if(bi>=boot.length){clearInterval(biv);inp.focus();return;}
+    addLine(boot[bi].c,boot[bi].v);bi++;
+  },140);
+
+  inp.addEventListener('keydown',e=>{
+    if(e.key==='Enter'){
+      const v=inp.value;if(v.trim())hist.unshift(v);hi=-1;inp.value='';run(v);
+    }
+    if(e.key==='ArrowUp'){hi=Math.min(hi+1,hist.length-1);inp.value=hist[hi]||'';}
+    if(e.key==='ArrowDown'){hi=Math.max(hi-1,-1);inp.value=hi<0?'':hist[hi];}
+  });
+})();
+</script>
+</body>
+</html>

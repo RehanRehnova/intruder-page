@@ -1,0 +1,881 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>INTRUDER — Advanced Penetration Testing Suite</title>
+<link href="https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=Bebas+Neue&family=Rajdhani:wght@300;400;600;700&display=swap" rel="stylesheet">
+<style>
+:root {
+  --red:    #cc0000;
+  --red2:   #ff1a1a;
+  --red3:   rgba(204,0,0,.08);
+  --dg:     #0a1a0a;
+  --g:      #1a4a1a;
+  --glow:   rgba(204,0,0,.18);
+  --bg:     #000000;
+  --sur:    #050505;
+  --sur2:   #080808;
+  --text:   #c8c8c8;
+  --textd:  #555;
+  --border: rgba(204,0,0,.12);
+}
+
+*, *::before, *::after { margin:0; padding:0; box-sizing:border-box; }
+html { scroll-behavior: smooth; }
+
+/* ── CURSOR: Windows Vista arrow ── */
+* { cursor: none !important; }
+#visCursor {
+  position: fixed;
+  width: 20px; height: 24px;
+  pointer-events: none;
+  z-index: 99999;
+  transform: translate(0, 0);
+}
+#visCursor svg { width: 100%; height: 100%; filter: drop-shadow(0 0 3px rgba(204,0,0,.5)); }
+
+body {
+  background: var(--bg);
+  color: var(--text);
+  font-family: 'Rajdhani', sans-serif;
+  font-weight: 400;
+  overflow-x: hidden;
+  line-height: 1.6;
+}
+
+/* CRT scanlines — very subtle */
+body::after {
+  content:''; position:fixed; inset:0;
+  background: repeating-linear-gradient(0deg,transparent,transparent 3px,rgba(0,0,0,.06) 3px,rgba(0,0,0,.06) 4px);
+  pointer-events:none; z-index:9998;
+}
+
+/* Scroll progress */
+#scrollPrg {
+  position:fixed; top:0; left:0; height:1px;
+  background: var(--red); width:0%;
+  z-index:9997; box-shadow:0 0 6px var(--red);
+  transition:width .04s linear;
+}
+
+/* ══════════════════════════════════
+   NAVIGATION
+══════════════════════════════════ */
+nav {
+  position: fixed; top:0; left:0; right:0; z-index:900;
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 22px 52px;
+  background: rgba(0,0,0,.92);
+  border-bottom: 1px solid rgba(204,0,0,.08);
+  backdrop-filter: blur(12px);
+  animation: navIn .6s ease .1s both;
+}
+@keyframes navIn { from{opacity:0;transform:translateY(-10px)} to{opacity:1;transform:none} }
+
+/* Glitch logo */
+.logo {
+  font-family: 'Bebas Neue', monospace;
+  font-size: 22px;
+  letter-spacing: .16em;
+  color: #fff;
+  position: relative;
+  display: inline-block;
+  text-decoration: none;
+}
+.logo::before, .logo::after {
+  content: attr(data-t);
+  position: absolute; top:0; left:0;
+  font-family: 'Bebas Neue', monospace;
+  font-size: 22px;
+  letter-spacing: .16em;
+}
+.logo::before { color:var(--red2); animation: lg1 6s steps(1) infinite; }
+.logo::after  { color:#004400;     animation: lg2 6s steps(1) infinite; }
+@keyframes lg1 {
+  0%,92%,100%{opacity:0;transform:none}
+  93%{opacity:1;transform:translate(-2px,0);clip-path:polygon(0 20%,100% 20%,100% 45%,0 45%)}
+  94%{opacity:1;transform:translate(2px,0);clip-path:polygon(0 60%,100% 60%,100% 80%,0 80%)}
+  95%{opacity:0}
+}
+@keyframes lg2 {
+  0%,92%,100%{opacity:0;transform:none}
+  93%{opacity:1;transform:translate(2px,0);clip-path:polygon(0 60%,100% 60%,100% 80%,0 80%)}
+  94%{opacity:1;transform:translate(-2px,0);clip-path:polygon(0 20%,100% 20%,100% 45%,0 45%)}
+  95%{opacity:0}
+}
+
+.nav-links {
+  display: flex; gap: 36px; list-style: none;
+}
+.nav-links a {
+  font-family: 'Share Tech Mono', monospace;
+  font-size: 11px; letter-spacing: .22em;
+  text-transform: uppercase;
+  color: var(--textd);
+  text-decoration: none;
+  transition: color .2s;
+  position: relative;
+}
+.nav-links a::after {
+  content:''; position:absolute; left:0; bottom:-4px;
+  width:0; height:1px; background:var(--red);
+  transition:width .25s ease;
+}
+.nav-links a:hover { color:var(--text); }
+.nav-links a:hover::after { width:100%; }
+
+.nav-cta {
+  font-family: 'Share Tech Mono', monospace;
+  font-size: 11px; letter-spacing: .2em; text-transform: uppercase;
+  color: var(--red2); background: transparent;
+  border: 1px solid rgba(204,0,0,.35); padding: 9px 22px;
+  text-decoration: none; transition: all .2s;
+}
+.nav-cta:hover { background:rgba(204,0,0,.07); border-color:var(--red2); }
+
+/* ══════════════════════════════════
+   HERO
+══════════════════════════════════ */
+.hero {
+  min-height: 100vh;
+  display: flex; flex-direction: column;
+  justify-content: center; align-items: flex-start;
+  padding: 130px 52px 80px;
+  position: relative; overflow: hidden;
+}
+
+/* subtle grid */
+.hero::before {
+  content:''; position:absolute; inset:0;
+  background-image:
+    linear-gradient(rgba(204,0,0,.03) 1px,transparent 1px),
+    linear-gradient(90deg,rgba(204,0,0,.03) 1px,transparent 1px);
+  background-size:60px 60px;
+  pointer-events:none;
+}
+
+/* diagonal red accent line */
+.hero::after {
+  content:''; position:absolute;
+  top:0; right:120px; width:1px; height:100%;
+  background: linear-gradient(180deg, transparent, rgba(204,0,0,.15) 30%, rgba(204,0,0,.08) 70%, transparent);
+  pointer-events:none;
+}
+
+.hero-eyebrow {
+  font-family: 'Share Tech Mono', monospace;
+  font-size: 11px; letter-spacing: .4em; text-transform: uppercase;
+  color: var(--red); margin-bottom: 28px;
+  opacity:0; animation: fadeUp .5s ease .4s both;
+}
+.hero-eyebrow span { color:rgba(204,0,0,.4); margin:0 10px; }
+
+.hero-title {
+  font-family: 'Bebas Neue', monospace;
+  font-size: clamp(72px,11vw,136px);
+  letter-spacing: .02em; line-height: .9;
+  color: #fff; margin-bottom: 8px;
+  opacity:0; animation: fadeUp .7s cubic-bezier(.16,1,.3,1) .5s both;
+}
+.hero-title .dim { color: #222; }
+.hero-title .acc { color: var(--red2); position:relative; }
+
+.hero-sub-title {
+  font-family: 'Bebas Neue', monospace;
+  font-size: clamp(36px,5.5vw,68px);
+  letter-spacing: .04em; color: #1a1a1a;
+  margin-bottom: 36px;
+  opacity:0; animation: fadeUp .7s cubic-bezier(.16,1,.3,1) .6s both;
+}
+
+.hero-desc {
+  font-size: 15px; font-weight: 300;
+  color: var(--textd); max-width: 480px;
+  line-height: 1.8; margin-bottom: 48px;
+  opacity:0; animation: fadeUp .5s ease .7s both;
+}
+
+.hero-ctas {
+  display: flex; gap: 16px; flex-wrap: wrap;
+  opacity:0; animation: fadeUp .5s ease .85s both;
+}
+
+.btn-primary {
+  font-family: 'Share Tech Mono', monospace;
+  font-size: 12px; letter-spacing: .2em; text-transform: uppercase;
+  background: var(--red); color: #fff; border: none;
+  padding: 14px 32px; cursor: none; transition: all .2s;
+  text-decoration: none; display: inline-block;
+}
+.btn-primary:hover { background:#ff0000; box-shadow:0 0 28px rgba(204,0,0,.35); }
+
+.btn-outline {
+  font-family: 'Share Tech Mono', monospace;
+  font-size: 12px; letter-spacing: .2em; text-transform: uppercase;
+  background: transparent; color: var(--textd);
+  border: 1px solid #1a1a1a; padding: 14px 32px;
+  cursor: none; transition: all .2s;
+  text-decoration: none; display: inline-block;
+}
+.btn-outline:hover { border-color:#333; color:var(--text); }
+
+/* hero right: live activity */
+.hero-aside {
+  position: absolute; right: 52px; top:50%;
+  transform: translateY(-50%);
+  width: 280px;
+  opacity:0; animation: fadeLeft .6s ease .9s both;
+}
+@keyframes fadeLeft { from{opacity:0;transform:translate(20px,-50%)} to{opacity:1;transform:translate(0,-50%)} }
+
+.aside-label {
+  font-family:'Share Tech Mono',monospace;
+  font-size:9px; letter-spacing:.3em; color:rgba(204,0,0,.4);
+  text-transform:uppercase; margin-bottom:12px;
+  display:flex; align-items:center; gap:8px;
+}
+.live-dot {
+  width:5px; height:5px; border-radius:50%;
+  background:var(--red2); animation:ldPulse 1.5s ease-in-out infinite;
+}
+@keyframes ldPulse { 50%{opacity:.2;box-shadow:none} 0%,100%{box-shadow:0 0 5px var(--red2)} }
+
+.activity-feed { display:flex; flex-direction:column; gap:0; }
+.act-row {
+  display:flex; gap:10px; padding:8px 0;
+  border-bottom:1px solid rgba(255,255,255,.03);
+  font-size:11px; font-family:'Share Tech Mono',monospace;
+  opacity:0; animation:actIn .3s ease forwards;
+}
+.act-time { color:rgba(255,255,255,.2); min-width:48px; }
+.act-msg  { color:rgba(255,255,255,.4); flex:1; }
+.act-msg.warn { color:rgba(255,176,0,.6); }
+.act-msg.alert{ color:rgba(204,0,0,.8); }
+.act-msg.ok   { color:rgba(0,180,60,.6); }
+@keyframes actIn { to{opacity:1} }
+
+/* ══════════════════════════════════
+   SECTION WRAPPER
+══════════════════════════════════ */
+.section { padding:90px 52px; border-top:1px solid rgba(255,255,255,.04); }
+.sec-eyebrow {
+  font-family:'Share Tech Mono',monospace;
+  font-size:9px; letter-spacing:.4em; text-transform:uppercase;
+  color:rgba(204,0,0,.4); margin-bottom:10px;
+}
+.sec-title {
+  font-family:'Bebas Neue',monospace;
+  font-size:clamp(32px,5vw,56px); letter-spacing:.04em;
+  color:#fff; margin-bottom:40px;
+}
+
+/* scroll reveal */
+.sr { opacity:0; transform:translateY(24px); transition:opacity .6s ease, transform .6s cubic-bezier(.16,1,.3,1); }
+.sr.vis { opacity:1; transform:none; }
+.sr-l { opacity:0; transform:translateX(-30px); transition:opacity .6s ease, transform .6s cubic-bezier(.16,1,.3,1); }
+.sr-l.vis { opacity:1; transform:none; }
+.sr-r { opacity:0; transform:translateX(30px); transition:opacity .6s ease, transform .6s cubic-bezier(.16,1,.3,1); }
+.sr-r.vis { opacity:1; transform:none; }
+
+/* ══════════════════════════════════
+   STATS SECTION
+══════════════════════════════════ */
+.stats-section { padding:80px 52px; background:var(--sur); }
+.stats-grid {
+  display:grid; grid-template-columns:repeat(4,1fr); gap:1px;
+  background:rgba(255,255,255,.04); border:1px solid rgba(255,255,255,.04);
+}
+.stat-cell {
+  background:var(--sur); padding:36px 28px;
+  position:relative; overflow:hidden;
+  cursor:none;
+  transition:background .3s;
+}
+.stat-cell:hover { background:#0a0a0a; }
+.stat-cell::before {
+  content:''; position:absolute; top:0; left:0; width:2px; height:0;
+  background:var(--red); transition:height .5s ease;
+}
+.stat-cell.vis::before { height:100%; }
+.stat-cell::after {
+  content:''; position:absolute; inset:0;
+  background:radial-gradient(circle at 0% 0%, rgba(204,0,0,.04), transparent 60%);
+  opacity:0; transition:opacity .3s;
+}
+.stat-cell:hover::after { opacity:1; }
+
+.stat-num {
+  font-family:'Bebas Neue',monospace;
+  font-size:clamp(36px,5vw,60px); line-height:1;
+  color:#fff; margin-bottom:6px;
+}
+.stat-num .unit { font-size:.55em; color:var(--red2); margin-left:2px; }
+.stat-label {
+  font-family:'Share Tech Mono',monospace;
+  font-size:9px; letter-spacing:.3em; text-transform:uppercase;
+  color:var(--textd); margin-bottom:14px;
+}
+.stat-bar-wrap { height:1px; background:rgba(255,255,255,.06); }
+.stat-bar { height:1px; background:var(--red); width:0%; transition:width 1.2s cubic-bezier(.16,1,.3,1); }
+.stat-cell.vis .stat-bar { width:var(--pct); }
+
+/* arc chart */
+.arc-wrap { position:relative; width:80px; height:40px; overflow:hidden; margin-bottom:12px; }
+.arc-wrap svg { width:80px; height:80px; transform:translateY(-50%); }
+
+/* ══════════════════════════════════
+   TOOLS SECTION
+══════════════════════════════════ */
+.tools-grid {
+  display:grid; grid-template-columns:1fr 1fr; gap:1px;
+  background:rgba(255,255,255,.04);
+}
+.tool-panel { background:var(--sur2); padding:32px; }
+.tool-panel:hover { background:var(--sur); }
+
+.tool-header {
+  display:flex; align-items:center; justify-content:space-between;
+  margin-bottom:24px;
+}
+.tool-name {
+  font-family:'Share Tech Mono',monospace;
+  font-size:11px; letter-spacing:.25em; text-transform:uppercase;
+  color:rgba(255,255,255,.5);
+}
+.tool-status {
+  font-size:9px; letter-spacing:.15em; font-family:'Share Tech Mono',monospace;
+  padding:3px 10px; text-transform:uppercase;
+}
+.tool-status.ready  { color:rgba(0,180,60,.7);  border:1px solid rgba(0,180,60,.2); }
+.tool-status.active { color:var(--red2); border:1px solid rgba(204,0,0,.3); animation:statusBlink 1s step-end infinite; }
+@keyframes statusBlink { 50%{opacity:.4} }
+
+/* ── Tool: Recon Scanner ── */
+.scan-ip {
+  font-family:'Share Tech Mono',monospace; font-size:13px;
+  background:rgba(255,255,255,.02); border:1px solid rgba(255,255,255,.06);
+  color:#fff; padding:10px 14px; width:100%; outline:none;
+  margin-bottom:8px; transition:border-color .2s;
+}
+.scan-ip:focus { border-color:rgba(204,0,0,.4); }
+.scan-range-row { display:flex; gap:8px; margin-bottom:16px; }
+.scan-range-row input { flex:1; }
+.tool-btn {
+  font-family:'Share Tech Mono',monospace; font-size:11px;
+  letter-spacing:.18em; text-transform:uppercase;
+  background:var(--red); color:#fff; border:none;
+  padding:10px 20px; cursor:none; transition:background .2s;
+  width:100%;
+}
+.tool-btn:hover { background:#ff0000; }
+.tool-btn.outline {
+  background:transparent; color:rgba(255,255,255,.3);
+  border:1px solid rgba(255,255,255,.07);
+}
+.tool-btn.outline:hover { border-color:rgba(255,255,255,.15); color:rgba(255,255,255,.6); }
+
+.scan-output {
+  margin-top:16px; font-family:'Share Tech Mono',monospace;
+  font-size:11px; color:rgba(255,255,255,.35); line-height:2;
+  min-height:80px; max-height:150px; overflow-y:auto;
+}
+.so-open  { color:rgba(0,200,80,.7); }
+.so-closed{ color:rgba(255,255,255,.18); }
+.so-info  { color:rgba(204,0,0,.7); }
+
+/* ── Tool: Hash Engine ── */
+.hash-algo-row { display:flex; gap:6px; flex-wrap:wrap; margin-bottom:12px; }
+.algo-btn {
+  font-family:'Share Tech Mono',monospace; font-size:9px; letter-spacing:.15em;
+  text-transform:uppercase; background:transparent; cursor:none;
+  border:1px solid rgba(255,255,255,.08); color:rgba(255,255,255,.3);
+  padding:5px 12px; transition:all .2s;
+}
+.algo-btn.active { border-color:rgba(204,0,0,.5); color:var(--red2); }
+.algo-btn:hover  { border-color:rgba(255,255,255,.15); color:rgba(255,255,255,.6); }
+
+.hash-result {
+  font-family:'Share Tech Mono',monospace; font-size:11px;
+  color:rgba(204,0,0,.7); word-break:break-all; line-height:1.8;
+  min-height:44px; padding:10px 14px;
+  background:rgba(204,0,0,.03); border:1px solid rgba(204,0,0,.08);
+  margin-top:12px; display:none;
+}
+.hash-result.show { display:block; }
+
+/* ── Tool: Network Monitor ── */
+.pkt-stream { max-height:180px; overflow-y:auto; }
+.pkt-row {
+  display:grid; grid-template-columns:64px 52px 1fr auto;
+  gap:10px; padding:5px 0;
+  border-bottom:1px solid rgba(255,255,255,.03);
+  font-family:'Share Tech Mono',monospace; font-size:10px;
+  color:rgba(255,255,255,.25); animation:pktIn .15s ease forwards;
+}
+@keyframes pktIn { from{opacity:0} to{opacity:1} }
+.pkt-proto.tcp  { color:rgba(0,180,80,.6); }
+.pkt-proto.udp  { color:rgba(255,176,0,.5); }
+.pkt-proto.http { color:rgba(0,150,255,.5); }
+.pkt-proto.sus  { color:rgba(204,0,0,.8); }
+.pkt-flag { font-size:9px; padding:1px 6px; border:1px solid rgba(204,0,0,.3); color:rgba(204,0,0,.7); }
+
+/* ── Tool: Intel Lookup ── */
+.intel-fields {
+  display:grid; grid-template-columns:1fr 1fr; gap:8px;
+  margin-top:14px; display:none;
+}
+.intel-fields.show { display:grid; }
+.intel-field { padding:10px 12px; background:rgba(255,255,255,.02); border:1px solid rgba(255,255,255,.04); }
+.intel-field .k { font-size:9px; letter-spacing:.2em; color:var(--textd); margin-bottom:3px; text-transform:uppercase; font-family:'Share Tech Mono',monospace; }
+.intel-field .v { font-size:12px; color:rgba(255,255,255,.6); font-family:'Share Tech Mono',monospace; }
+.intel-field .v.ld { color:rgba(255,255,255,.2); animation:ldBlink .7s step-end infinite; }
+@keyframes ldBlink { 50%{opacity:.3} }
+
+/* ══════════════════════════════════
+   CAPABILITIES / FEATURES STRIP
+══════════════════════════════════ */
+.caps-grid {
+  display:grid; grid-template-columns:repeat(3,1fr); gap:24px;
+}
+.cap-item { padding:28px 0; border-top:1px solid rgba(255,255,255,.06); }
+.cap-num {
+  font-family:'Bebas Neue',monospace; font-size:11px;
+  letter-spacing:.3em; color:rgba(204,0,0,.3); margin-bottom:14px;
+}
+.cap-title {
+  font-family:'Bebas Neue',monospace; font-size:20px;
+  letter-spacing:.06em; color:#fff; margin-bottom:8px;
+}
+.cap-desc { font-size:13px; color:var(--textd); line-height:1.7; font-weight:300; }
+
+/* ══════════════════════════════════
+   FOOTER
+══════════════════════════════════ */
+footer {
+  padding:40px 52px; border-top:1px solid rgba(255,255,255,.04);
+  display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:16px;
+}
+.footer-logo { font-family:'Bebas Neue',monospace; font-size:18px; letter-spacing:.16em; color:#1a1a1a; }
+.footer-note { font-family:'Share Tech Mono',monospace; font-size:10px; color:#222; letter-spacing:.15em; }
+
+@keyframes fadeUp { from{opacity:0;transform:translateY(16px)} to{opacity:1;transform:none} }
+
+/* scrollbar */
+::-webkit-scrollbar { width:4px; }
+::-webkit-scrollbar-track { background:transparent; }
+::-webkit-scrollbar-thumb { background:#1a1a1a; }
+::-webkit-scrollbar-thumb:hover { background:#2a2a2a; }
+
+@media(max-width:900px){
+  nav { padding:18px 24px; }
+  .hero { padding:120px 24px 60px; }
+  .hero-aside { display:none; }
+  .section { padding:60px 24px; }
+  .stats-grid { grid-template-columns:1fr 1fr; }
+  .tools-grid { grid-template-columns:1fr; }
+  .caps-grid  { grid-template-columns:1fr; }
+  .stats-section { padding:60px 24px; }
+}
+</style>
+</head>
+<body>
+
+<!-- Vista cursor SVG -->
+<div id="visCursor">
+  <svg viewBox="0 0 20 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+    <defs>
+      <linearGradient id="cg1" x1="0" y1="0" x2="10" y2="24" gradientUnits="userSpaceOnUse">
+        <stop offset="0%" stop-color="#ffffff"/>
+        <stop offset="100%" stop-color="#a0a0a0"/>
+      </linearGradient>
+      <linearGradient id="cg2" x1="2" y1="2" x2="8" y2="20" gradientUnits="userSpaceOnUse">
+        <stop offset="0%" stop-color="#cc0000" stop-opacity="0.4"/>
+        <stop offset="100%" stop-color="#660000" stop-opacity="0.1"/>
+      </linearGradient>
+    </defs>
+    <!-- shadow -->
+    <path d="M2 2 L2 20 L6 15 L10 22 L12 21 L8 14 L14 14 Z" fill="rgba(0,0,0,0.35)" transform="translate(1.5,1.5)"/>
+    <!-- main arrow body -->
+    <path d="M2 2 L2 20 L6 15 L10 22 L12 21 L8 14 L14 14 Z" fill="url(#cg1)" stroke="rgba(0,0,0,0.6)" stroke-width="0.5"/>
+    <!-- red tint overlay -->
+    <path d="M2 2 L2 20 L6 15 L10 22 L12 21 L8 14 L14 14 Z" fill="url(#cg2)"/>
+    <!-- highlight edge -->
+    <path d="M2.5 3 L2.5 18 L5.5 13.5" stroke="rgba(255,255,255,0.6)" stroke-width="0.5" fill="none"/>
+  </svg>
+</div>
+
+<div id="scrollPrg"></div>
+
+<!-- ══ NAV ══ -->
+<nav>
+  <a class="logo" href="#" data-t="INTRUDER">INTRUDER</a>
+  <ul class="nav-links">
+    <li><a href="#tools">Tools</a></li>
+    <li><a href="#stats">Metrics</a></li>
+    <li><a href="#capabilities">Capabilities</a></li>
+  </ul>
+  <a class="nav-cta" href="#tools">Launch Suite</a>
+</nav>
+
+<!-- ══ HERO ══ -->
+<section class="hero">
+  <div class="hero-eyebrow">Advanced Security Research Platform <span>◆</span> v4.2.1 <span>◆</span> Professional Edition</div>
+  <h1 class="hero-title">
+    ADVANCED<br>
+    <span class="acc">PENETRATION</span><br>
+    <span class="dim">TESTING</span>
+  </h1>
+  <div class="hero-sub-title">SUITE</div>
+  <p class="hero-desc">
+    Enterprise-grade security assessment framework. Identify vulnerabilities, map attack surfaces, and deliver actionable intelligence — with precision.
+  </p>
+  <div class="hero-ctas">
+    <a href="#tools" class="btn-primary">Access Suite</a>
+    <a href="#capabilities" class="btn-outline">Documentation</a>
+  </div>
+
+  <!-- live feed -->
+  <aside class="hero-aside">
+    <div class="aside-label"><div class="live-dot"></div> Live Activity</div>
+    <div class="activity-feed" id="actFeed"></div>
+  </aside>
+</section>
+
+<!-- ══ STATS ══ -->
+<section class="stats-section" id="stats">
+  <div class="stats-grid">
+    <div class="stat-cell sr">
+      <div class="stat-label">Vulnerabilities Found</div>
+      <div class="stat-num"><span class="sval" data-t="3847">0</span></div>
+      <div style="font-size:11px;color:var(--textd);font-family:'Share Tech Mono',monospace;margin-bottom:14px">across all audits</div>
+      <div class="stat-bar-wrap"><div class="stat-bar" style="--pct:78%"></div></div>
+    </div>
+    <div class="stat-cell sr" style="transition-delay:.1s">
+      <div class="stat-label">Networks Audited</div>
+      <div class="stat-num"><span class="sval" data-t="512">0</span><span class="unit">+</span></div>
+      <div style="font-size:11px;color:var(--textd);font-family:'Share Tech Mono',monospace;margin-bottom:14px">enterprise clients</div>
+      <div class="stat-bar-wrap"><div class="stat-bar" style="--pct:62%"></div></div>
+    </div>
+    <div class="stat-cell sr" style="transition-delay:.2s">
+      <div class="stat-label">CVEs Reported</div>
+      <div class="stat-num"><span class="sval" data-t="94">0</span></div>
+      <div style="font-size:11px;color:var(--textd);font-family:'Share Tech Mono',monospace;margin-bottom:14px">responsibly disclosed</div>
+      <div class="stat-bar-wrap"><div class="stat-bar" style="--pct:45%"></div></div>
+    </div>
+    <div class="stat-cell sr" style="transition-delay:.3s">
+      <div class="stat-label">Uptime</div>
+      <div class="stat-num"><span class="sval" data-t="99">0</span><span class="unit">.9%</span></div>
+      <div style="font-size:11px;color:var(--textd);font-family:'Share Tech Mono',monospace;margin-bottom:14px">platform availability</div>
+      <div class="stat-bar-wrap"><div class="stat-bar" style="--pct:99%"></div></div>
+    </div>
+  </div>
+</section>
+
+<!-- ══ TOOLS ══ -->
+<section class="section" id="tools">
+  <div class="sec-eyebrow sr">// Active Tools</div>
+  <div class="sec-title sr">Security Toolkit</div>
+
+  <div class="tools-grid">
+
+    <!-- PORT SCANNER -->
+    <div class="tool-panel sr">
+      <div class="tool-header">
+        <span class="tool-name">Network Recon</span>
+        <span class="tool-status ready">Ready</span>
+      </div>
+      <input class="scan-ip" id="scanIP" type="text" value="192.168.1.1" placeholder="Target IP address">
+      <div class="scan-range-row">
+        <input class="scan-ip" id="scanFrom" type="text" value="1" placeholder="From" style="width:80px">
+        <input class="scan-ip" id="scanTo"   type="text" value="1024" placeholder="To"   style="width:80px">
+        <button class="tool-btn" onclick="runScan()" style="flex:1">▶ Scan Ports</button>
+      </div>
+      <div class="scan-output" id="scanOut"><span style="color:#1a1a1a">— awaiting target —</span></div>
+    </div>
+
+    <!-- HASH ENGINE -->
+    <div class="tool-panel sr" style="transition-delay:.1s">
+      <div class="tool-header">
+        <span class="tool-name">Cryptographic Engine</span>
+        <span class="tool-status ready">Ready</span>
+      </div>
+      <div class="hash-algo-row">
+        <button class="algo-btn active" data-a="sha256">SHA-256</button>
+        <button class="algo-btn" data-a="sha1">SHA-1</button>
+        <button class="algo-btn" data-a="b64">BASE64</button>
+        <button class="algo-btn" data-a="hex">HEX</button>
+        <button class="algo-btn" data-a="md5">MD5</button>
+      </div>
+      <input class="scan-ip" id="hashIn" type="text" placeholder="Enter plaintext to encode...">
+      <button class="tool-btn" onclick="runHash()" style="margin-top:8px">Encode / Hash</button>
+      <div class="hash-result" id="hashOut"></div>
+    </div>
+
+    <!-- PACKET MONITOR -->
+    <div class="tool-panel sr" style="transition-delay:.15s">
+      <div class="tool-header">
+        <span class="tool-name">Packet Monitor</span>
+        <span class="tool-status active">Live</span>
+      </div>
+      <div class="pkt-stream" id="pktStream"></div>
+    </div>
+
+    <!-- IP INTEL -->
+    <div class="tool-panel sr" style="transition-delay:.2s">
+      <div class="tool-header">
+        <span class="tool-name">IP Intelligence</span>
+        <span class="tool-status ready">Ready</span>
+      </div>
+      <div style="display:flex;gap:8px;margin-bottom:8px">
+        <input class="scan-ip" id="ipIn" type="text" placeholder="IP address or domain..." style="flex:1;margin:0">
+        <button class="tool-btn" onclick="doLookup()" style="width:auto;padding:10px 16px">Lookup</button>
+      </div>
+      <button class="tool-btn outline" onclick="myIP()">Lookup My IP</button>
+      <div class="intel-fields" id="intelFields"></div>
+    </div>
+
+  </div>
+</section>
+
+<!-- ══ CAPABILITIES ══ -->
+<section class="section" id="capabilities">
+  <div class="sec-eyebrow sr">// Platform Capabilities</div>
+  <div class="sec-title sr">What the Suite Does</div>
+
+  <div class="caps-grid">
+    <div class="cap-item sr">
+      <div class="cap-num">01</div>
+      <div class="cap-title">Surface Mapping</div>
+      <p class="cap-desc">Automated discovery of exposed services, open ports, and misconfigured endpoints across IPv4 and IPv6 ranges.</p>
+    </div>
+    <div class="cap-item sr" style="transition-delay:.1s">
+      <div class="cap-num">02</div>
+      <div class="cap-title">Vulnerability Assessment</div>
+      <p class="cap-desc">CVE database correlation against detected service versions. Severity-ranked output with remediation guidance.</p>
+    </div>
+    <div class="cap-item sr" style="transition-delay:.2s">
+      <div class="cap-num">03</div>
+      <div class="cap-title">Traffic Analysis</div>
+      <p class="cap-desc">Real-time packet inspection, protocol identification, and anomaly flagging across monitored network interfaces.</p>
+    </div>
+    <div class="cap-item sr" style="transition-delay:.05s">
+      <div class="cap-num">04</div>
+      <div class="cap-title">Cryptographic Tools</div>
+      <p class="cap-desc">Hash generation, encoding, and key analysis utilities built for forensic and audit workflows.</p>
+    </div>
+    <div class="cap-item sr" style="transition-delay:.15s">
+      <div class="cap-num">05</div>
+      <div class="cap-title">OSINT Integration</div>
+      <p class="cap-desc">IP geolocation, ASN lookup, and passive reconnaissance aggregation from open-source intelligence sources.</p>
+    </div>
+    <div class="cap-item sr" style="transition-delay:.25s">
+      <div class="cap-num">06</div>
+      <div class="cap-title">Reporting Engine</div>
+      <p class="cap-desc">Structured audit reports exportable to PDF and JSON. Designed for presentation to technical and executive stakeholders.</p>
+    </div>
+  </div>
+</section>
+
+<!-- ══ FOOTER ══ -->
+<footer>
+  <div class="footer-logo">INTRUDER</div>
+  <div class="footer-note">For authorized security research only. Always obtain written permission before testing.</div>
+  <div class="footer-note">© 2025 INTRUDER SUITE</div>
+</footer>
+
+<script>
+/* ═══════════════════════
+   CURSOR
+═══════════════════════ */
+const cur = document.getElementById('visCursor');
+let cx=0,cy=0;
+document.addEventListener('mousemove', e=>{
+  cx=e.clientX; cy=e.clientY;
+  cur.style.left=cx+'px'; cur.style.top=cy+'px';
+});
+
+/* ═══════════════════════
+   SCROLL
+═══════════════════════ */
+window.addEventListener('scroll',()=>{
+  const p=window.scrollY/(document.body.scrollHeight-window.innerHeight)*100;
+  document.getElementById('scrollPrg').style.width=p+'%';
+});
+
+const IO=new IntersectionObserver(entries=>{
+  entries.forEach(en=>{
+    if(en.isIntersecting){
+      en.target.classList.add('vis');
+      en.target.querySelectorAll('.sval[data-t]').forEach(animCount);
+      if(en.target.matches('.sval[data-t]')) animCount(en.target);
+    }
+  });
+},{threshold:.15});
+document.querySelectorAll('.sr,.sr-l,.sr-r,.stat-cell,.sval').forEach(el=>IO.observe(el));
+
+function animCount(el){
+  const t=parseInt(el.dataset.t); const d=1400; const s=Date.now();
+  const iv=setInterval(()=>{
+    const p=Math.min((Date.now()-s)/d,1);
+    const e=1-Math.pow(1-p,3);
+    el.textContent=Math.floor(e*t).toLocaleString();
+    if(p>=1){clearInterval(iv);el.textContent=t.toLocaleString();}
+  },20);
+}
+
+/* ═══════════════════════
+   LIVE ACTIVITY FEED
+═══════════════════════ */
+(function(){
+  const feed=document.getElementById('actFeed');
+  const events=[
+    ['warn','Port 8080 exposed on 10.0.0.12'],
+    ['alert','SQLi vector detected on /api/auth'],
+    ['ok','Scan completed — 3 hosts up'],
+    ['warn','TLS 1.0 still active on :443'],
+    ['alert','Default creds accepted — SSH'],
+    ['ok','Report generated: audit_091.pdf'],
+    ['warn','Open redirect at /redirect?url='],
+    ['alert','CORS wildcard on api.target.io'],
+    ['ok','CVE-2024-1234 — patch confirmed'],
+    ['warn','Directory listing at /backup/'],
+  ];
+  let idx=0;
+  function pad(n){return String(n).padStart(2,'0');}
+  function addRow(){
+    const now=new Date();
+    const ts=`${pad(now.getHours())}:${pad(now.getMinutes())}:${pad(now.getSeconds())}`;
+    const ev=events[idx%events.length]; idx++;
+    const row=document.createElement('div');
+    row.className='act-row';
+    row.innerHTML=`<span class="act-time">${ts}</span><span class="act-msg ${ev[0]}">${ev[1]}</span>`;
+    feed.appendChild(row);
+    if(feed.children.length>8) feed.removeChild(feed.firstChild);
+    [...feed.children].forEach((r,i)=>{r.style.animationDelay=`${i*30}ms`;});
+  }
+  for(let i=0;i<6;i++) addRow();
+  setInterval(addRow,2200);
+})();
+
+/* ═══════════════════════
+   PORT SCANNER
+═══════════════════════ */
+const SERVICES={21:'FTP',22:'SSH',23:'Telnet',25:'SMTP',53:'DNS',80:'HTTP',110:'POP3',143:'IMAP',443:'HTTPS',445:'SMB',3306:'MySQL',3389:'RDP',5432:'Postgres',6379:'Redis',8080:'HTTP-Alt',8443:'HTTPS-Alt',27017:'MongoDB',9200:'Elasticsearch'};
+const SUSPECT=[21,23,445,3389,4444,1433,5900];
+let scanning=false;
+function runScan(){
+  if(scanning) return;
+  scanning=true;
+  const ip=document.getElementById('scanIP').value||'192.168.1.1';
+  const from=parseInt(document.getElementById('scanFrom').value)||1;
+  const to=Math.min(parseInt(document.getElementById('scanTo').value)||100, from+80);
+  const out=document.getElementById('scanOut');
+  out.innerHTML=`<span class="so-info">Starting scan on ${ip} [${from}-${to}]...</span>\n`;
+  let port=from;
+  function next(){
+    if(port>to){
+      out.innerHTML+=`<span class="so-info">Scan complete.</span>`;
+      out.scrollTop=out.scrollHeight; scanning=false; return;
+    }
+    const roll=Math.random();
+    const open=SUSPECT.includes(port)?roll>.25:[22,80,443,3306,8080].includes(port)?roll>.3:roll>.92;
+    const svc=SERVICES[port]||'unknown';
+    if(open){
+      const flag=SUSPECT.includes(port)?` <span style="color:rgba(204,0,0,.7)">[!]</span>`:'';
+      out.innerHTML+=`<span class="so-open">${String(port).padEnd(6)} open    ${svc}</span>${flag}\n`;
+    }
+    out.scrollTop=out.scrollHeight;
+    port++;
+    setTimeout(next, 14+Math.random()*10);
+  }
+  setTimeout(next,200);
+}
+
+/* ═══════════════════════
+   HASH ENGINE
+═══════════════════════ */
+let activeAlgo='sha256';
+document.querySelectorAll('.algo-btn').forEach(btn=>{
+  btn.addEventListener('click',()=>{
+    document.querySelectorAll('.algo-btn').forEach(b=>b.classList.remove('active'));
+    btn.classList.add('active'); activeAlgo=btn.dataset.a;
+  });
+});
+async function runHash(){
+  const txt=document.getElementById('hashIn').value;
+  const out=document.getElementById('hashOut');
+  if(!txt){out.className='hash-result show';out.textContent='⚠ No input provided.';return;}
+  out.className='hash-result show'; out.textContent='Computing...';
+  let result='';
+  if(activeAlgo==='sha256'||activeAlgo==='sha1'){
+    const buf=new TextEncoder().encode(txt);
+    const hash=await crypto.subtle.digest(activeAlgo==='sha256'?'SHA-256':'SHA-1',buf);
+    result=[...new Uint8Array(hash)].map(b=>b.toString(16).padStart(2,'0')).join('');
+  }else if(activeAlgo==='b64'){result=btoa(unescape(encodeURIComponent(txt)));}
+  else if(activeAlgo==='hex'){result=[...txt].map(c=>c.charCodeAt(0).toString(16).padStart(2,'0')).join(' ');}
+  else{let h=0;for(let i=0;i<txt.length;i++)h=(Math.imul(31,h)+txt.charCodeAt(i))|0;const b=Math.abs(h).toString(16).padStart(8,'0');result=(b+b+b+b).slice(0,32);}
+  out.textContent='';let i=0;const iv=setInterval(()=>{out.textContent+=result[i++];if(i>=result.length)clearInterval(iv);},10);
+}
+document.getElementById('hashIn').addEventListener('keydown',e=>{if(e.key==='Enter')runHash();});
+
+/* ═══════════════════════
+   PACKET MONITOR
+═══════════════════════ */
+(function(){
+  const stream=document.getElementById('pktStream');
+  const IPS=['10.0.0.','192.168.1.','172.16.0.','45.33.32.','8.8.'];
+  const PORTS=[80,443,22,53,3306,8080,25,3389,6379];
+  const TYPES=[{p:'TCP',c:'tcp'},{p:'UDP',c:'udp'},{p:'HTTP',c:'http'},{p:'!!!',c:'sus'}];
+  const INFO=['SYN ACK','GET /admin','SSH handshake','DNS query','Auth attempt','Data transfer','Port scan','Null byte'];
+  let count=0;
+  function pad2(n){return String(n).padStart(2,'0');}
+  function addPkt(){
+    count++;
+    const now=new Date();
+    const ts=`${pad2(now.getHours())}:${pad2(now.getMinutes())}:${pad2(now.getSeconds())}`;
+    const w=Math.random();
+    const t=w>.94?TYPES[3]:w>.72?TYPES[2]:w>.44?TYPES[1]:TYPES[0];
+    const srcIP=IPS[Math.floor(Math.random()*IPS.length)]+(1+Math.floor(Math.random()*253));
+    const dstPort=PORTS[Math.floor(Math.random()*PORTS.length)];
+    const info=INFO[Math.floor(Math.random()*INFO.length)];
+    const flag=t.c==='sus'?'<span class="pkt-flag">ALERT</span>':'';
+    const row=document.createElement('div');
+    row.className='pkt-row';
+    row.innerHTML=`<span style="color:rgba(255,255,255,.2)">${ts}</span><span class="pkt-proto ${t.c}">${t.p}</span><span>${srcIP}</span><span>${flag||`→:${dstPort} ${info}`}</span>`;
+    stream.prepend(row);
+    if(stream.children.length>16) stream.removeChild(stream.lastChild);
+  }
+  setInterval(addPkt,420);
+})();
+
+/* ═══════════════════════
+   IP INTEL
+═══════════════════════ */
+function renderFields(d){
+  const el=document.getElementById('intelFields');
+  el.className='intel-fields show';
+  const fields=[['IP',d.ip||'—'],['Country',(d.country_name||'—')],['Region',d.region||'—'],['City',d.city||'—'],['ISP',d.org||'—'],['Timezone',d.timezone||'—'],['Latitude',d.latitude||'—'],['Longitude',d.longitude||'—']];
+  el.innerHTML=fields.map(([k,v])=>`<div class="intel-field"><div class="k">${k}</div><div class="v">${v}</div></div>`).join('');
+}
+function setLoading(){
+  const el=document.getElementById('intelFields');
+  el.className='intel-fields show';
+  el.innerHTML=['IP','Country','Region','City','ISP','Timezone','Lat','Long'].map(k=>`<div class="intel-field"><div class="k">${k}</div><div class="v ld">resolving...</div></div>`).join('');
+}
+async function doLookup(){
+  const ip=document.getElementById('ipIn').value.trim();
+  if(!ip) return;
+  setLoading();
+  try{const r=await fetch(`https://ipapi.co/${ip}/json/`);renderFields(await r.json());}
+  catch{document.getElementById('intelFields').innerHTML='<div class="intel-field" style="grid-column:1/-1"><div class="v" style="color:rgba(204,0,0,.7)">Lookup failed.</div></div>';}
+}
+async function myIP(){
+  setLoading();
+  try{const r=await fetch('https://ipapi.co/json/');const d=await r.json();document.getElementById('ipIn').value=d.ip||'';renderFields(d);}
+  catch{}
+}
+document.getElementById('ipIn').addEventListener('keydown',e=>{if(e.key==='Enter')doLookup();});
+</script>
+</body>
+</html>
